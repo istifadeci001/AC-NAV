@@ -34,27 +34,39 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
 #intro input{border:0;border-radius:12px;padding:14px;font-size:17px;background:#2d363e;color:#fff;width:100%}
 #rt{color:#9fe3b7;min-height:1.2em}
 .hm{font-size:24px;line-height:28px;text-align:center}
+#intro{overflow:auto;justify-content:flex-start;padding-top:calc(28px + env(safe-area-inset-top,0))}
+.sug{background:#232b32;border-radius:12px;max-height:36vh;overflow:auto}
+.sug div{padding:10px 14px;border-bottom:1px solid #333d45}
+.sug b{display:block;font-size:16px}.sug small{color:var(--dim)}
+#info{background:#222a31;padding:6px 14px;font-size:15px;color:#cfe3ff;display:none}
+#tch{position:fixed;left:10px;right:10px;top:calc(34% + 44px);z-index:1500;background:rgba(20,26,31,.95);border:2px solid #4aa3ff;border-radius:14px;padding:12px 14px;font-size:17px;line-height:1.35;display:none}
 </style>
 </head>
 <body>
 <div id="app">
   <div id="status"><div id="glyph">…</div><div id="msg"><h1 id="t">AC Nav</h1><p id="s">Başlamaq üçün düyməyə bas.</p></div></div>
+  <div id="info"></div>
   <div id="map"></div>
   <div id="bar">
     <div id="spd">0</div><div class="u">km/saat</div>
     <div class="lim" id="lim">–</div>
     <div class="sp"></div>
+    <button class="b" id="cam">📷</button>
+    <button class="b" id="auto">⏱</button>
     <button class="b" id="vbtn">🔊</button>
     <button class="b" id="fast" style="display:none">⏩</button>
     <button class="b" onclick="location.reload()">Çıx</button>
   </div>
 </div>
+<div id="tch"></div>
 <div id="intro">
   <h1>AC Nav</h1>
   <p>Səsli müəllim: yolda gördüklərini Azərbaycan dilində deyir. STOP, yol ver, piyada keçidi, svetofor, dairəvi hərəkət və sürət limiti xəritə məlumatına görə xəbərdarlıq edilir.</p>
-  <p>Xəritədə olmayan nişanları bilmir. Bu proqram köməkçidir, sürücünün məsuliyyətini əvəz etmir.</p>
+  <p>Nişanlar, zolaqlar və qadağalar xəritə (OSM) məlumatına görədir; yerdəki xətləri və xəritədə olmayanları yalnız 📷 kamera müəllimi görə bilir. Bu proqram köməkçidir, sürücünün məsuliyyətini əvəz etmir.</p>
   <input id="from" placeholder="Haradan (boş = mənim yerim)" autocomplete="off">
   <input id="to" placeholder="Hara gedirsən? (məs: Gəncə)" autocomplete="off">
+  <input id="key" type="password" placeholder="Claude API açarı (kamera müəllimi üçün, istəyə bağlı)" autocomplete="off">
+  <button class="b" id="vtest">🔊 Səsi yoxla</button>
   <p id="rt"></p><p id="vnote" style="color:#e0a21a"></p>
   <button class="b" id="go">Naviqasiya (GPS ilə)</button>
   <button class="b" id="demo">Simulyasiya (maşın sürmədən)</button>
@@ -73,23 +85,46 @@ const T={
  give_way:{m:'🔻',g:'▽',range:120,t:'Yol ver',s:'Əsas yolda gedənlərə yol ver.',w:'Qarşıda yol ver nişanı. Əsas yolda gedənlərə yol ver.'},
  crossing:{m:'🚸',g:'🚶',range:80,t:'Piyada keçidi',s:'Piyada varsa dayan.',w:'Piyada keçidi. Piyada varsa dayan.'},
  signals:{m:'🚦',g:'🚦',range:110,t:'Svetofor',s:'İşığın rəngini özün yoxla.',w:'Qarşıda svetofor. İşığın rəngini özün yoxla.'},
- round:{m:'🔄',g:'⟳',range:120,t:'Dairəvi hərəkət',s:'Yol ver nişanı varsa, dairədəkinə yol ver.',w:'Dairəvi hərəkət. Yol ver nişanı varsa, dairədəkinə yol ver.'}
+ round:{m:'🔄',g:'⟳',range:120,t:'Dairəvi hərəkət',s:'Girişdəki nişana bax: yol ver varsa, dairədəkinə yol ver.',w:'Dairəvi hərəkət. Girişdəki nişana bax. Yol ver nişanı varsa, dairədəkinə yol ver. Çıxarkən sağ siqnal ver.'},
+ cam:{m:'📸',g:'📸',range:300,t:'Sürət kamerası',s:'Sürəti yoxla.',w:'Qarşıda sürət ölçən kamera.'},
+ bump:{m:'🚧',g:'〰',range:120,t:'Yavaşladıcı',s:'Sürəti azalt.',w:'Qarşıda yavaşladıcı. Sürəti azalt.'},
+ rail:{m:'🚆',g:'🚆',range:200,t:'Dəmir yolu keçidi',s:'Dayan, hər iki tərəfə bax.',w:'Qarşıda dəmir yolu keçidi. Yavaşla, hər iki tərəfə bax.'}
 };
-let map,me,hl,hz={},ann={},heading=null,last=null,lim=null,voiceOn=true,voice=null,watchId=null,timer=null,lastFetch=null,lastRound=0,lastSp=0;
+let map,me,hl,hz={},ann={},heading=null,last=null,lim=null,voiceOn=true,voice=null,watchId=null,timer=null,lastFetch=null,lastRound=0,lastSp=0,rw={},lastPos=null,lastW=null;
 
-/* Səs */
+/* Səs: əvvəl telefonun öz TTS-i (Android), sonra brauzer səsi. Azərbaycan yoxdursa türk */
+const TTS=(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())?Capacitor.registerPlugin('TextToSpeech'):null;
+let ttsLang='az-AZ';
+const trFix=t=>t.replace(/ə/g,'e').replace(/Ə/g,'E').replace(/x/g,'h').replace(/X/g,'H').replace(/q/g,'k').replace(/Q/g,'K');
+async function initTTS(){
+  if(!TTS)return;
+  try{
+    let found=null;
+    for(const l of ['az-AZ','tr-TR']){try{const r=await TTS.isLanguageSupported({lang:l});if(r&&r.supported){found=l;break}}catch(e){}}
+    if(found){ttsLang=found;$('vnote').textContent=found==='az-AZ'?'':'Azərbaycan səsi yoxdur, türk səsi işlədilir.'}
+    else{ttsLang='tr-TR';$('vnote').textContent='Telefonda səs mühərriki yoxdur. Play Store-dan "Speech Services by Google" quraşdır və Ayarlar > Mətnin səsləndirilməsi bölməsində seç.'}
+  }catch(e){}
+}
 function pickVoice(){
-  if(!('speechSynthesis' in window))return;
+  if(TTS||!('speechSynthesis' in window))return;
   const v=speechSynthesis.getVoices();
   voice=v.find(x=>/^az/i.test(x.lang))||null;
   if(!voice){voice=v.find(x=>/^tr/i.test(x.lang))||null;
     $('vnote').textContent=voice?'Azərbaycan səsi tapılmadı, türk səsi işlədilir.':'Bu cihazda səs tapılmadı. Telefon ayarlarında "Mətnin səsləndirilməsi" yoxlayın.'}
 }
 if('speechSynthesis' in window){speechSynthesis.onvoiceschanged=pickVoice;pickVoice()}
+initTTS();
 function say(t){
-  if(!voiceOn||!('speechSynthesis' in window))return;
+  if(!voiceOn)return;
+  if(TTS){
+    const tr=ttsLang!=='az-AZ';
+    TTS.stop().catch(()=>{}).then(()=>TTS.speak({text:tr?trFix(t):t,lang:ttsLang,rate:.95,pitch:1,volume:1})).catch(e=>{$('vnote').textContent='Səs xətası: '+(e&&e.message||e)});
+    return;
+  }
+  if(!('speechSynthesis' in window))return;
   speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(t);u.lang=voice?voice.lang:'az-AZ';if(voice)u.voice=voice;u.rate=.95;
+  const tr=voice&&!/^az/i.test(voice.lang);
+  const u=new SpeechSynthesisUtterance(tr?trFix(t):t);u.lang=voice?voice.lang:'az-AZ';if(voice)u.voice=voice;u.rate=.95;
   speechSynthesis.speak(u);
 }
 $('vbtn').onclick=()=>{voiceOn=!voiceOn;$('vbtn').textContent=voiceOn?'🔊':'🔇';if(voiceOn)say('Salam, mən AC Nav. Səsim eşidilirmi?')};
@@ -107,10 +142,48 @@ function addHz(id,h){
 }
 function setS(c,g,o,t,s){$('status').className=c;$('glyph').className=o?'oct':'';$('glyph').textContent=g;$('t').textContent=t;$('s').textContent=s}
 
+/* Yol, zolaq məlumatı (OSM) */
+function dseg(lat,lon,a,b){const k=Math.cos(rad(lat)),x=(lon-a[1])*k,y=lat-a[0],dx=(b[1]-a[1])*k,dy=b[0]-a[0],l=dx*dx+dy*dy;const t=l?Math.max(0,Math.min(1,(x*dx+y*dy)/l)):0;return Math.hypot(x-t*dx,y-t*dy)*111320}
+function curRoad(lat,lon,hd){
+  let best=null,bd=22,bb=0;
+  for(const id in rw){const w=rw[id],p=w.p;
+    for(let i=0;i<p.length-1;i++){
+      const d=dseg(lat,lon,p[i],p[i+1]);if(d>=bd)continue;
+      const g=brg(p[i][0],p[i][1],p[i+1][0],p[i+1][1]);
+      if(hd!=null){const a=adiff(g,hd);if(Math.min(a,180-a)>50)continue}
+      bd=d;best=w;bb=g}}
+  if(!best)return null;
+  let fwd=hd==null||adiff(bb,hd)<=90;if(best.t.oneway==='-1')fwd=!fwd;
+  return{w:best,fwd};
+}
+const TN={left:'sola',slight_left:'azca sola',sharp_left:'sola',through:'düz',right:'sağa',slight_right:'azca sağa',sharp_right:'sağa',reverse:'geri',merge_to_left:'sola birləş',merge_to_right:'sağa birləş',none:'düz','':'düz'};
+function lanesOf(r){
+  const t=r.w.t,d=r.fwd?'forward':'backward',ow=t.oneway==='yes'||t.oneway==='-1'||t.junction==='roundabout';
+  const tl=ow?t['turn:lanes']:t['turn:lanes:'+d];
+  let n=ow?parseInt(t.lanes):parseInt(t['lanes:'+d]||(t.lanes?Math.ceil(t.lanes/2):0));
+  const turn=tl?tl.split('|').map(x=>x.split(';')):null;
+  return{n:turn?turn.length:(n||null),turn};
+}
+function laneName(i,n){return i===0?'Sol':i===n-1?'Sağ':n===3?'Orta':(i+1)+'-ci'}
+function roadInfo(r){
+  if(!r)return'';
+  const t=r.w.t,L=lanesOf(r),a=[];
+  if(t.name)a.push(t.name);
+  if(t.oneway==='yes'||t.oneway==='-1')a.push('Birtərəfli yol');
+  if(L.turn&&L.turn.length>1)a.push(L.turn.map((m,i)=>laneName(i,L.turn.length)+': '+m.map(x=>TN[x]||x).join('/')).join(' · '));
+  else if(L.n>1)a.push(L.n+' zolaq');
+  if(t.overtaking==='no'||t['overtaking:'+(r.fwd?'forward':'backward')]==='no')a.push('Sollamaq qadağandır');
+  return a.join(' • ');
+}
+
 /* Əsas məntiq */
 function onPos(lat,lon,spd,hd){
   if(hd!=null)heading=hd;
-  const nav=navTick(lat,lon);
+  const rd=curRoad(lat,lon,heading);
+  if(rd){const mx=parseInt(rd.w.t.maxspeed);lim=mx>0?mx:null}else if(lastFetch)lim=null;
+  const inf=roadInfo(rd),ie=$('info');ie.style.display=inf?'block':'none';ie.textContent=inf;
+  if(rd&&rd.w.id!==lastW){lastW=rd.w.id;const L=lanesOf(rd);if(L.turn&&L.turn.length>1)say('Zolaqlar: '+L.turn.map((m,i)=>laneName(i,L.turn.length).toLowerCase()+' '+m.map(x=>TN[x]||x).join(' və ')).join(', '))}
+  const nav=navTick(lat,lon,rd);
   me.setLatLng([lat,lon]);map.setView([lat,lon],Math.max(map.getZoom(),16),{animate:false});
   $('spd').textContent=Math.round(spd);$('lim').textContent=lim||'–';
   let best=null,bd=1e9;
@@ -144,20 +217,25 @@ function onPos(lat,lon,spd,hd){
 /* Real GPS + Overpass (pulsuz ictimai API, internet lazımdır) */
 async function load(lat,lon){
   lastFetch=[lat,lon];
-  const q='[out:json][timeout:15];(node(around:450,'+lat+','+lon+')[highway~"^(stop|give_way|traffic_signals|crossing)$"];way(around:450,'+lat+','+lon+')[junction=roundabout];way(around:20,'+lat+','+lon+')[highway][maxspeed];);out center tags;';
+  const A='(around:400,'+lat+','+lon+')';
+  const q='[out:json][timeout:20];(node'+A+'[highway~"^(stop|give_way|traffic_signals|crossing|speed_camera)$"];node'+A+'[traffic_calming~"^(bump|hump|table|cushion)$"];node'+A+'[railway=level_crossing];way(around:350,'+lat+','+lon+')[highway~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"];);out geom tags;';
   try{
     const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});
-    const j=await r.json();let nl=null;
+    const j=await r.json();
+    if(Object.keys(rw).length>1500)rw={};
     for(const e of j.elements){
       const t=e.tags||{};
-      if(e.type==='way'&&t.highway&&t.maxspeed&&nl==null){const v=parseInt(t.maxspeed);if(v>0)nl=v}
-      let k=null;
-      if(t.highway==='stop')k='stop';else if(t.highway==='give_way')k='give_way';else if(t.highway==='traffic_signals')k='signals';
-      else if(t.highway==='crossing'&&e.type==='node')k='crossing';else if(t.junction==='roundabout')k='round';
-      if(!k)continue;
-      const p=e.type==='node'?e:e.center;if(p)addHz(e.type+e.id,{k,lat:p.lat,lon:p.lon});
+      if(e.type==='way'){
+        const g=e.geometry||[];
+        rw['w'+e.id]={id:e.id,t,p:g.map(x=>[x.lat,x.lon])};
+        if(t.junction==='roundabout'&&g.length)addHz('w'+e.id,{k:'round',lat:g.reduce((a,x)=>a+x.lat,0)/g.length,lon:g.reduce((a,x)=>a+x.lon,0)/g.length});
+        continue}
+      let k=null;const h=t.highway;
+      if(h==='stop')k='stop';else if(h==='give_way')k='give_way';else if(h==='traffic_signals')k='signals';
+      else if(h==='crossing')k='crossing';else if(h==='speed_camera')k='cam';
+      else if(t.traffic_calming)k='bump';else if(t.railway==='level_crossing')k='rail';
+      if(k&&e.lat!=null)addHz('n'+e.id,{k,lat:e.lat,lon:e.lon});
     }
-    lim=nl;
   }catch(err){lastFetch=null;$('s').textContent='Yol məlumatı yüklənmədi. İnterneti yoxla.'}
 }
 /* Marşrut (Nominatim + OSRM, pulsuz ictimai serverlər) */
@@ -169,24 +247,56 @@ function stepTxt(s){
   if(ty==='arrive')return{v:'Təyinat nöqtəsinə çatırsınız',g:'🏁',a:'Təyinat'};
   if(ty==='roundabout'||ty==='rotary')return{v:'dairəvi hərəkətdə '+(m.exit||1)+'-ci çıxışdan çıxın',g:'⟳',a:'Dairədə '+(m.exit||1)+'-ci çıxış'};
   const d=DIR[m.modifier];if(!d||ty==='depart')return null;
-  return{v:d+' dönün',g:ARR[m.modifier],a:d+' dön'};
+  return{v:d+' dönün',g:ARR[m.modifier],a:d+' dön',k:m.modifier.includes('right')?'right':m.modifier.includes('left')?'left':null};
 }
-function navTick(lat,lon){
+function navTick(lat,lon,rd){
   while(ni<steps.length){
     const s=steps[ni],d=dist(lat,lon,s.lat,s.lon),arr=s.tx.g==='🏁';
     if(arr&&d<30){if(!nann.e){nann.e=1;say('Təyinat nöqtəsinə çatdınız.')}return{g:'🏁',t:'Çatdınız',s:'Təyinat nöqtəsi'}}
     if(!arr&&d<35){ni++;continue}
-    if(d<=180&&!nann[ni+'a']){nann[ni+'a']=1;say(Math.round(d/10)*10+' metr sonra '+s.tx.v)}
+    if(d<=180&&!nann[ni+'a']){nann[ni+'a']=1;let h='';
+      if(rd&&s.tx.k){const L=lanesOf(rd);if(L.turn){const ix=[];L.turn.forEach((m,i)=>{if(m.some(x=>x.includes(s.tx.k)))ix.push(laneName(i,L.turn.length).toLowerCase())});if(ix.length&&ix.length<L.turn.length)h='. '+ix.join(' və ')+' zolaqda ol'}}
+      say(Math.round(d/10)*10+' metr sonra '+s.tx.v+h)}
     if(d<=40&&!nann[ni+'b']){nann[ni+'b']=1;say(s.tx.v)}
     return d<=300?{g:s.tx.g,t:Math.round(d)+' m, '+s.tx.a,s:'Növbəti manevr'}:{g:'⬆',t:'Düz get',s:Math.round(d/10)*10+' m sonra: '+s.tx.a};
   }
   return null;
 }
-async function geo(q){
+const sel={};
+async function geo(q,key){
+  if(key&&sel[key])return sel[key];
   const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=az&accept-language=az&q='+encodeURIComponent(q));
   const j=await r.json();if(!j.length)throw new Error('"'+q+'" tapılmadı');
   return[parseFloat(j[0].lat),parseFloat(j[0].lon)];
 }
+async function search(q){
+  let u='https://nominatim.openstreetmap.org/search?format=json&limit=12&addressdetails=1&countrycodes=az&accept-language=az&q='+encodeURIComponent(q);
+  if(lastPos)u+='&viewbox='+[lastPos[1]-.4,lastPos[0]+.3,lastPos[1]+.4,lastPos[0]-.3].join(',');
+  const j=await(await fetch(u)).json();
+  const o=j.map(x=>{const a=x.address||{},pl=[a.suburb||a.neighbourhood||a.city_district||a.quarter||a.village,a.city||a.town||a.municipality||a.county].filter(Boolean);
+    const lat=+x.lat,lon=+x.lon,km=lastPos?dist(lastPos[0],lastPos[1],lat,lon)/1000:null;
+    return{n:x.name||x.display_name.split(',')[0],a:(pl.length?pl.join(', '):x.display_name.split(',').slice(1,3).join(',').trim())+(km!=null?' • '+km.toFixed(1)+' km':''),lat,lon,km}});
+  if(lastPos)o.sort((p,q)=>p.km-q.km);
+  return o;
+}
+function setupAC(id){
+  const inp=$(id),box=document.createElement('div');box.className='sug';inp.after(box);
+  let tm,seq=0;
+  inp.addEventListener('input',()=>{
+    sel[id]=null;clearTimeout(tm);const q=inp.value.trim();
+    if(q.length<3){box.innerHTML='';return}
+    tm=setTimeout(async()=>{
+      const n=++seq;
+      try{const r=await search(q);if(n!==seq)return;box.innerHTML='';
+        r.forEach(x=>{const d=document.createElement('div'),b=document.createElement('b'),sm=document.createElement('small');
+          b.textContent=x.n;sm.textContent=x.a;d.append(b,sm);
+          d.onclick=()=>{inp.value=x.n+(x.a?', '+x.a.replace(/ • .*$/,''):'');sel[id]=[x.lat,x.lon];box.innerHTML=''};
+          box.appendChild(d)})}catch(e){}
+    },600);
+  });
+}
+setupAC('from');setupAC('to');
+if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{lastPos=[p.coords.latitude,p.coords.longitude]},()=>{},{timeout:8000,maximumAge:120000});
 const here=()=>new Promise((ok,no)=>navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>ok([p.coords.latitude,p.coords.longitude]),()=>no(new Error('GPS işləmir. "Haradan" qutusuna ünvan yaz.')),{timeout:12000,maximumAge:60000}):no(new Error('GPS yoxdur')));
 async function buildRoute(a,b){
   const r=await fetch('https://router.project-osrm.org/route/v1/driving/'+a[1]+','+a[0]+';'+b[1]+','+b[0]+'?overview=full&geometries=geojson&steps=true');
@@ -227,7 +337,7 @@ function startReal(dest){
   if(navigator.wakeLock)navigator.wakeLock.request('screen').catch(()=>{});
   let hi=true,got=false;
   const ok=p=>{
-    got=true;const c=p.coords;let hd=null;
+    got=true;const c=p.coords;lastPos=[c.latitude,c.longitude];let hd=null;
     if(c.heading!=null&&!isNaN(c.heading)&&c.speed>1)hd=c.heading;
     if(last&&dist(last[0],last[1],c.latitude,c.longitude)>4){if(hd==null)hd=brg(last[0],last[1],c.latitude,c.longitude);last=[c.latitude,c.longitude]}
     else if(!last)last=[c.latitude,c.longitude];
@@ -270,15 +380,51 @@ async function begin(sim){
   try{
     if(sim&&!to){hide();say('Sınaq başlayır.');startDemo();return}
     $('rt').textContent='Axtarılır…';
-    const b=to?await geo(to):null;
+    const b=to?await geo(to,'to'):null;
     if(!sim){hide();say('AC Nav hazırdır.');startReal(b);return}
-    const a=fr?await geo(fr):await here();
+    const a=fr?await geo(fr,'from'):await here();
     const r=await buildRoute(a,b);
     hide();initMap(a[0],a[1]);drawRoute(r);
     say('Marşrut '+r.km+' kilometr, təxminən '+r.min+' dəqiqə.');
     $('fast').style.display='';simRoute(r.pts);
   }catch(e){$('rt').textContent=e.name==='TypeError'?'İnternetə qoşulmaq olmadı.':e.message}
 }
+/* 📷 Kamera müəllimi (Claude görmə modeli, internet və API açarı lazımdır) */
+try{$('key').value=localStorage.getItem('acnav_key')||''}catch(e){}
+$('key').onchange=()=>{try{localStorage.setItem('acnav_key',$('key').value.trim())}catch(e){}};
+$('vtest').onclick=()=>say('Salam, mən AC Nav. Səsim eşidilirmi?');
+let vid=null,busy=false,autoT=null,tt=null;
+async function frame(){
+  if(!vid){
+    vid=document.createElement('video');vid.setAttribute('playsinline','');vid.muted=true;
+    vid.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}},audio:false});
+    await vid.play();await new Promise(r=>setTimeout(r,700));
+  }
+  const c=document.createElement('canvas');c.width=1024;c.height=Math.round(1024*vid.videoHeight/vid.videoWidth);
+  c.getContext('2d').drawImage(vid,0,0,c.width,c.height);
+  return c.toDataURL('image/jpeg',.7).split(',')[1];
+}
+function showT(x){const e=$('tch');e.textContent=x;e.style.display='block';clearTimeout(tt);tt=setTimeout(()=>e.style.display='none',20000)}
+$('tch').onclick=()=>$('tch').style.display='none';
+const SYS='Sən Azərbaycan Yol Hərəkəti Qaydaları üzrə sürücülük müəllimisən. Şəkil maşının qabaq kamerasındandır. Gördüklərini 3-4 qısa cümlə ilə Azərbaycan dilində izah et: yol nişanları və mənası, yerdəki xətlər (fasiləsiz və ya qırıq xətt - nə icazə verilir, nə qadağandır), zolaqlar və oxlar, svetofor, piyadalar, dairəvi hərəkət, kim kimə yol verməlidir. Əmin olmadığını "əmin deyiləm" de, uydurma. Önəmli bir şey yoxdursa "Yol sakitdir" de. Səsləndirməyə uyğun yaz, simvol və markdown işlətmə.';
+async function teach(){
+  if(busy)return;
+  const key=($('key').value||localStorage.getItem('acnav_key')||'').trim();
+  if(!key){showT('Kamera müəllimi üçün giriş ekranında Claude API açarını yaz (Çıx düyməsi ilə qayıt).');return}
+  busy=true;showT('📷 Müəllim baxır…');
+  try{
+    const img=await frame();
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-5-5',max_tokens:300,system:SYS,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:img}},{type:'text',text:'Bu an nə görürsən? Müəllim kimi izah et.'}]}]})});
+    const j=await r.json();
+    if(!r.ok)throw new Error(r.status===401?'API açarı səhvdir.':(j.error&&j.error.message)||'Xəta '+r.status);
+    const x=(j.content||[]).map(c=>c.text||'').join(' ').trim();
+    showT(x);say(x);
+  }catch(e){showT(e.name==='NotAllowedError'?'Kamera icazəsi yoxdur.':e.name==='TypeError'?'İnternetə qoşulmaq olmadı.':'Kamera müəllimi: '+e.message)}
+  busy=false;
+}
+$('cam').onclick=teach;
+$('auto').onclick=()=>{if(autoT){clearInterval(autoT);autoT=null;$('auto').textContent='⏱';return}teach();autoT=setInterval(teach,25000);$('auto').textContent='⏱ ✓'};
 $('go').onclick=()=>begin(false);
 $('demo').onclick=()=>begin(true);
 </script>
