@@ -10,9 +10,10 @@ jobs:
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: 17}
       - run: npm install
+      - run: mkdir -p www/vendor && cp node_modules/leaflet/dist/leaflet.js node_modules/leaflet/dist/leaflet.css www/vendor/
       - run: npx cap add android
       - run: |
-          sed -i 's#<application#<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><application#' android/app/src/main/AndroidManifest.xml
+          sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/><uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><uses-permission android:name="android.permission.WAKE_LOCK"/><application#' android/app/src/main/AndroidManifest.xml
           sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA"/><uses-feature android:name="android.hardware.camera" android:required="false"/><application#' android/app/src/main/AndroidManifest.xml
           sed -i 's#</manifest>#<queries><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries></manifest>#' android/app/src/main/AndroidManifest.xml
           npx cap sync android
