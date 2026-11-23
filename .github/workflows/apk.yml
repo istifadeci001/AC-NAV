@@ -11,6 +11,15 @@ jobs:
         with: {distribution: temurin, java-version: 17}
       - run: npm install
       - run: npx cap add android
+      - name: Download sign model into the app
+        continue-on-error: true
+        run: |
+          git clone --depth 1 https://github.com/AlessandroFerrante/StreetSignSense.git sss
+          (cd sss && git lfs pull || true)
+          M=$(find sss -type d -name 'yolov12n_web_model' | head -1)
+          echo "model dir: $M"; ls -la "$M"
+          mkdir -p www/models/signs && cp -r "$M"/. www/models/signs/
+          du -sh www/models/signs; find www/models/signs -size -1k
       - run: |
           sed -i 's#<application#<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><application#' android/app/src/main/AndroidManifest.xml
           sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA"/><uses-feature android:name="android.hardware.camera" android:required="false"/><application#' android/app/src/main/AndroidManifest.xml
