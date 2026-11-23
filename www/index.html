@@ -124,11 +124,11 @@ async function initTTS(){
   if(!TTS){$('vnote').textContent='Səs: brauzer rejimi.';return}
   try{
     const r=await TTS.getSupportedLanguages(),L=(r&&r.languages)||[];
-    ttsLang=L.find(x=>/^az([_-]|$)/i.test(x))||L.find(x=>/^tr([_-]|$)/i.test(x))||L.find(x=>/^en([_-]|$)/i.test(x))||L[0]||'az-AZ';
-    $('vnote').textContent=L.length?('Səs mühərriki var, '+L.length+' dil. Seçilən: '+ttsLang+(/^az/i.test(ttsLang)?' (Azərbaycan dili)':(/^tr/i.test(ttsLang)?' (türk dili)':' (alternativ dil)'))):'Telefonda səs mühərriki yoxdur. Play Store-dan "Speech Services by Google" quraşdır.';
+    ttsLang=L.find(x=>/^tr/i.test(x))||L.find(x=>/^az/i.test(x))||L.find(x=>/^en/i.test(x))||L[0]||'tr-TR';
+    $('vnote').textContent=L.length?('Səs mühərriki var, '+L.length+' dil. Seçilən: '+ttsLang+(/^tr/i.test(ttsLang)?' (türk)':' (türk səsi yoxdur!)')):'Telefonda səs mühərriki yoxdur. Play Store-dan "Speech Services by Google" quraşdır.';
   }catch(e){$('vnote').textContent='Səs mühərriki xətası: '+(e&&e.message||e)}
 }
-function pickVoice(){if(TTS||!('speechSynthesis' in window))return;const V=speechSynthesis.getVoices();voice=V.find(x=>/^az([_-]|$)/i.test(x.lang))||V.find(x=>/^tr([_-]|$)/i.test(x.lang))||V.find(x=>/^en([_-]|$)/i.test(x.lang))||null}
+function pickVoice(){if(TTS||!('speechSynthesis' in window))return;voice=speechSynthesis.getVoices().find(x=>/^tr/i.test(x.lang))||null}
 if('speechSynthesis' in window){speechSynthesis.onvoiceschanged=pickVoice;pickVoice()}
 initTTS().catch(()=>{});
 function say(t){
@@ -140,7 +140,7 @@ function say(t){
       return}
     if(!('speechSynthesis' in window)){beep();return}
     speechSynthesis.cancel();
-    const lang=voice?voice.lang:'az-AZ';const u=new SpeechSynthesisUtterance(/^tr/i.test(lang)?trFix(t):t);u.lang=lang;if(voice)u.voice=voice;u.rate=.95;speechSynthesis.speak(u);
+    const u=new SpeechSynthesisUtterance(trFix(t));u.lang=voice?voice.lang:'tr-TR';if(voice)u.voice=voice;u.rate=.95;speechSynthesis.speak(u);
   }catch(e){beep();showT('Səs xətası: '+e.message)}
 }
 $('vbtn').onclick=()=>{voiceOn=!voiceOn;$('vbtn').textContent=voiceOn?'🔊':'🔇';if(voiceOn)say('Salam, mən AC Nav. Səsim eşidilirmi?')};
@@ -196,7 +196,7 @@ function roadInfo(r){
 function onPos(lat,lon,spd,hd){
   if(hd!=null)heading=hd;curSpd=spd;
   const rd=curRoad(lat,lon,heading);
-  if(rd){const raw=String(rd.w.t.maxspeed||'').trim();const mx=parseInt(raw,10);lim=Number.isFinite(mx)&&mx>0?mx:null}else{lim=null;}
+  if(rd){const mx=parseInt(rd.w.t.maxspeed);lim=mx>0?mx:null}else if(lastFetch)lim=null;
   const inf=roadInfo(rd),ie=$('info');ie.style.display=inf?'block':'none';ie.textContent=inf;
   if(rd&&rd.w.id!==lastW){lastW=rd.w.id;const L=lanesOf(rd);if(L.turn&&L.turn.length>1)say('Zolaqlar: '+L.turn.map((m,i)=>laneName(i,L.turn.length).toLowerCase()+' '+m.map(x=>TN[x]||x).join(' və ')).join(', '))}
   const nav=navTick(lat,lon,rd);
@@ -428,7 +428,7 @@ $('vtest').onclick=async()=>{
   beep();
   if(TTS){
     await initTTS();
-    try{await TTS.speak({text:/^tr/i.test(ttsLang)?trFix('Salam, mən AC Nav. Səsim eşidilirmi?'):'Salam, mən AC Nav. Səsim eşidilirmi?',lang:ttsLang,rate:.95,pitch:1,volume:1});$('vnote').textContent+=' | Nitq göndərildi.'}
+    try{await TTS.speak({text:trFix('Salam, mən AC Nav. Səsim eşidilirmi?'),lang:ttsLang,rate:.95,pitch:1,volume:1});$('vnote').textContent+=' | Nitq göndərildi.'}
     catch(e){$('vnote').textContent+=' | Nitq xətası: '+(e&&e.message||e)}
   }else say('Salam, mən AC Nav. Səsim eşidilirmi?');
 };
@@ -452,7 +452,7 @@ const signName=cl=>{const c=SC[cl],m=/^forb_speed_over_(\d+)$/.exec(c);return m?
 let sm=null,smS=640,smNCHW=false;
 let signErr='';
 async function loadSigns(){
-  const urls=['indexeddb://acnav-signs','models/signs/model.json','https://streetsignsense.alessandroferrante.net/demo/assets/models/StreetSignSenseY12n_tfjs_converted/model.json','https://alessandroferrante.github.io/StreetSignSense/demo/assets/models/StreetSignSenseY12n_tfjs_converted/model.json','https://cdn.jsdelivr.net/gh/AlessandroFerrante/StreetSignSense@main/demo/assets/models/StreetSignSenseY12n_tfjs_converted/model.json','https://raw.githubusercontent.com/AlessandroFerrante/StreetSignSense/main/demo/assets/models/StreetSignSenseY12n_tfjs_converted/model.json'];
+  const urls=['indexeddb://acnav-signs','models/signs/model.json','https://streetsignsense.alessandroferrante.net/demo/assets/models/yolov12n_web_model/model.json','https://alessandroferrante.github.io/StreetSignSense/demo/assets/models/yolov12n_web_model/model.json','https://cdn.jsdelivr.net/gh/AlessandroFerrante/StreetSignSense@main/demo/assets/models/yolov12n_web_model/model.json','https://raw.githubusercontent.com/AlessandroFerrante/StreetSignSense/main/demo/assets/models/yolov12n_web_model/model.json'];
   const errs=[];
   for(const u of urls){
     try{
@@ -485,9 +485,23 @@ function decodeSigns(d,sh,S,s,px,py,thr){
 async function detectSigns(v){
   const S=smS,vw=v.videoWidth,vh=v.videoHeight,s=Math.min(S/vw,S/vh),nw=Math.round(vw*s),nh=Math.round(vh*s),px=Math.floor((S-nw)/2),py=Math.floor((S-nh)/2);
   const inp=tf.tidy(()=>{let x=tf.image.resizeBilinear(tf.browser.fromPixels(v),[nh,nw]).pad([[py,S-nh-py],[px,S-nw-px],[0,0]],114).div(255);if(smNCHW)x=x.transpose([2,0,1]);return x.expandDims(0)});
-  const out=sm.execute(inp);inp.dispose();
-  const arr=Array.isArray(out)?out:[out],o=arr[0],sh=o.shape,d=await o.data();arr.forEach(t=>t.dispose());
-  return decodeSigns(d,sh,S,s,px,py,.5);
+  let out;
+  try {
+    // YOLO modelində NonMaxSuppressionV4 asinxron əməliyyatdır;
+    // buna görə GraphModel.execute() deyil, executeAsync() işlədilməlidir.
+    out = await sm.executeAsync(inp);
+  } finally {
+    inp.dispose();
+  }
+  const arr = Array.isArray(out) ? out : [out];
+  try {
+    const o = arr[0];
+    const sh = o.shape;
+    const d = await o.data();
+    return decodeSigns(d, sh, S, s, px, py, .5);
+  } finally {
+    arr.forEach(t => { if (t && typeof t.dispose === 'function') t.dispose(); });
+  }
 }
 async function camLoop(){
   const v=$('cv'),cv=$('cc'),g=cv.getContext('2d');let n=0,cres=[],prev={};
@@ -532,9 +546,9 @@ async function camLoop(){
   }
 }
 async function openCam(){
-  $('camv').style.display='block';$('ci').textContent='Kamera və AI modulları yüklənir…';
+  $('camv').style.display='block';$('ci').textContent='Kamera və model yüklənir (ilk dəfə internet lazımdır)…';
   try{
-    if(!cmodel){await loadJS('vendor/tf.min.js');await loadJS('vendor/coco-ssd.min.js');cmodel=await cocoSsd.load()}
+    if(!cmodel){await loadJS('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js');await loadJS('https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js');cmodel=await cocoSsd.load()}
     if(!sm){$('ci').textContent='Nişan modeli yüklənir…';if(!await loadSigns())showT('Nişan modeli yüklənmədi. '+signErr)}
     cstream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}},audio:false});
     const v=$('cv');v.srcObject=cstream;await v.play();camOn=true;camLoop();
