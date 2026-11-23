@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AC Nav</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<link rel="stylesheet" href="vendor/leaflet.css">
 <style>
 :root{--ink:#101418;--panel:#1b2127;--txt:#f2f4f5;--dim:#9aa5ad}
 *{box-sizing:border-box;margin:0}
@@ -52,27 +52,43 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
     <div class="lim" id="lim">–</div>
     <div class="sp"></div>
     <button class="b" id="cam">📷</button>
-    <button class="b" id="auto">⏱</button>
+    <button class="b" id="stop">■</button>
+    <button class="b" id="auto">i</button>
     <button class="b" id="vbtn">🔊</button>
     <button class="b" id="fast" style="display:none">⏩</button>
     <button class="b" onclick="location.reload()">Çıx</button>
   </div>
 </div>
 <div id="tch"></div>
+<div id="cameraPanel" style="display:none;position:fixed;inset:0;z-index:3000;background:#101418;padding:18px;overflow:auto">
+  <h2 style="margin:8px 0 12px">Offline kamera köməkçisi</h2>
+  <video id="cameraVideo" playsinline autoplay muted style="width:100%;max-height:42vh;object-fit:contain;background:#222;border-radius:12px"></video>
+  <p style="margin:12px 0;color:#cfd6db;line-height:1.4">Kamera görüntüsü telefonda qalır. Bu versiyada avtomatik süni intellekt tanıma yoxdur. Gördüyün nişanı seç — müəllim qaydanı internet və API açarı olmadan səsləndirəcək.</p>
+  <div id="cameraChoices" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <button class="b" data-say="STOP nişanı. Xəttdən əvvəl tam dayan. Təhlükəsizliyi yoxla, sonra yol açıqdırsa davam et.">🛑 STOP</button>
+    <button class="b" data-say="Yol ver nişanı. Kəsişən yolda hərəkət edənlərə yol ver, lazım gələrsə dayan.">🔻 Yol ver</button>
+    <button class="b" data-say="Piyada keçidi. Sürəti azalt, piyadaya yol ver və lazım olduqda dayan.">🚸 Piyada keçidi</button>
+    <button class="b" data-say="Svetofor. İşığın rənginə və yol nişanlarına uyğun hərəkət et.">🚦 Svetofor</button>
+    <button class="b" data-say="Sürət məhdudiyyəti nişanı. Göstərilən sürət həddinə əməl et.">⭕ Sürət həddi</button>
+    <button class="b" data-say="Ötmək qadağandır nişanı. Bu hissədə ötmə etmə.">🚫 Ötmə qadağandır</button>
+    <button class="b" data-say="Dəmir yolu keçidi. Yavaşla, hər iki tərəfi yoxla və qadağanedici siqnal varsa dayan.">🚆 Dəmir yolu</button>
+    <button class="b" data-say="Mən bu nişanı dəqiq müəyyən edə bilmirəm. Rəsmi nişan qaydasını yoxla və ehtiyatlı ol.">❔ Digər nişan</button>
+  </div>
+  <button class="b" id="closeCamera" style="width:100%;margin-top:12px">Bağla</button>
+</div>
 <div id="intro">
   <h1>AC Nav</h1>
-  <p>Səsli müəllim: yolda gördüklərini Azərbaycan dilində deyir. STOP, yol ver, piyada keçidi, svetofor, dairəvi hərəkət və sürət limiti xəritə məlumatına görə xəbərdarlıq edilir.</p>
-  <p>Nişanlar, zolaqlar və qadağalar xəritə (OSM) məlumatına görədir; yerdəki xətləri və xəritədə olmayanları yalnız 📷 kamera müəllimi görə bilir. Bu proqram köməkçidir, sürücünün məsuliyyətini əvəz etmir.</p>
+  <p>AC Nav — Azərbaycan dilində səsli sürücülük köməkçisi. GPS naviqasiyası, sınaq simulyasiyası və xəritədəki yol xəbərdarlıqları.</p>
+  <p>📷 Kamera bölməsi internet və API açarı olmadan işləyən köməkçi rejimdir: görüntünü göstərir, nişan növünü özün seçdikdə Azərbaycan dilində izah edir. Avtomatik AI tanıma daxil deyil. Xəritə və marşrut üçün internet lazımdır. Bu proqram köməkçidir, yol nişanlarını və real vəziyyəti özün də yoxla.</p>
   <input id="from" placeholder="Haradan (boş = mənim yerim)" autocomplete="off">
   <input id="to" placeholder="Hara gedirsən? (məs: Gəncə)" autocomplete="off">
-  <input id="key" type="password" placeholder="Claude API açarı (kamera müəllimi üçün, istəyə bağlı)" autocomplete="off">
   <button class="b" id="vtest">🔊 Səsi yoxla</button>
   <p id="rt"></p><p id="vnote" style="color:#e0a21a"></p>
   <button class="b" id="go">Naviqasiya (GPS ilə)</button>
   <button class="b" id="demo">Simulyasiya (maşın sürmədən)</button>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="vendor/leaflet.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const R=6371000,rad=x=>x*Math.PI/180;
@@ -131,8 +147,12 @@ $('vbtn').onclick=()=>{voiceOn=!voiceOn;$('vbtn').textContent=voiceOn?'🔊':'�
 
 /* Xəritə */
 function initMap(lat,lon){
+  if(!window.L){throw new Error('Xəritə modulu yüklənmədi. Tətbiqi yenidən quraşdır.')}
+  if(map){map.remove();map=null;hz={};ann={};rw={};}
   map=L.map('map',{zoomControl:false,attributionControl:true}).setView([lat,lon],17);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+  const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
+  tiles.addTo(map);
+  tiles.on('tileerror',()=>{$('s').textContent='Xəritə plitələri yüklənmədi. İnterneti yoxla; simulyasiya yenə işləyə bilər.'});
   me=L.circleMarker([lat,lon],{radius:9,color:'#fff',weight:3,fillColor:'#1976ff',fillOpacity:1}).addTo(map);
   hl=L.layerGroup().addTo(map);
 }
@@ -353,6 +373,8 @@ function startReal(dest){
   watchId=navigator.geolocation.watchPosition(ok,err,{enableHighAccuracy:true,maximumAge:1000,timeout:20000});
 }
 
+window.addEventListener('pagehide',()=>{if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());});
+
 /* Sınaq rejimi: maşın sürmədən yoxlamaq üçün */
 function startDemo(){
   const lat0=40.4093,lon0=49.8671,M=m=>lat0+m/111320;
@@ -376,6 +398,9 @@ function startDemo(){
 const hide=()=>$('intro').style.display='none';
 $('fast').onclick=()=>{simK=simK===1?4:1;$('fast').textContent=simK===1?'⏩':'⏩×4'};
 async function begin(sim){
+  if(timer){clearInterval(timer);timer=null;}
+  if(watchId!=null&&navigator.geolocation){navigator.geolocation.clearWatch(watchId);watchId=null;}
+  rq=false;steps=[];ni=0;nann={};ann={};last=null;lastFetch=null;lastW=null;lim=null;
   $('rt').textContent='';const fr=$('from').value.trim(),to=$('to').value.trim();
   try{
     if(sim&&!to){hide();say('Sınaq başlayır.');startDemo();return}
@@ -389,42 +414,39 @@ async function begin(sim){
     $('fast').style.display='';simRoute(r.pts);
   }catch(e){$('rt').textContent=e.name==='TypeError'?'İnternetə qoşulmaq olmadı.':e.message}
 }
-/* 📷 Kamera müəllimi (Claude görmə modeli, internet və API açarı lazımdır) */
-try{$('key').value=localStorage.getItem('acnav_key')||''}catch(e){}
-$('key').onchange=()=>{try{localStorage.setItem('acnav_key',$('key').value.trim())}catch(e){}};
-$('vtest').onclick=()=>say('Salam, mən AC Nav. Səsim eşidilirmi?');
-let vid=null,busy=false,autoT=null,tt=null;
-async function frame(){
-  if(!vid){
-    vid=document.createElement('video');vid.setAttribute('playsinline','');vid.muted=true;
-    vid.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}},audio:false});
-    await vid.play();await new Promise(r=>setTimeout(r,700));
-  }
-  const c=document.createElement('canvas');c.width=1024;c.height=Math.round(1024*vid.videoHeight/vid.videoWidth);
-  c.getContext('2d').drawImage(vid,0,0,c.width,c.height);
-  return c.toDataURL('image/jpeg',.7).split(',')[1];
-}
+/* 📷 Offline kamera köməkçisi: görüntü cihazda qalır, qayda istifadəçi seçimi ilə izah olunur. */
+let cameraStream=null,autoT=null,tt=null;
 function showT(x){const e=$('tch');e.textContent=x;e.style.display='block';clearTimeout(tt);tt=setTimeout(()=>e.style.display='none',20000)}
-$('tch').onclick=()=>$('tch').style.display='none';
-const SYS='Sən Azərbaycan Yol Hərəkəti Qaydaları üzrə sürücülük müəllimisən. Şəkil maşının qabaq kamerasındandır. Gördüklərini 3-4 qısa cümlə ilə Azərbaycan dilində izah et: yol nişanları və mənası, yerdəki xətlər (fasiləsiz və ya qırıq xətt - nə icazə verilir, nə qadağandır), zolaqlar və oxlar, svetofor, piyadalar, dairəvi hərəkət, kim kimə yol verməlidir. Əmin olmadığını "əmin deyiləm" de, uydurma. Önəmli bir şey yoxdursa "Yol sakitdir" de. Səsləndirməyə uyğun yaz, simvol və markdown işlətmə.';
-async function teach(){
-  if(busy)return;
-  const key=($('key').value||localStorage.getItem('acnav_key')||'').trim();
-  if(!key){showT('Kamera müəllimi üçün giriş ekranında Claude API açarını yaz (Çıx düyməsi ilə qayıt).');return}
-  busy=true;showT('📷 Müəllim baxır…');
+async function openOfflineCamera(){
+  const panel=$('cameraPanel'),video=$('cameraVideo'); panel.style.display='block';
   try{
-    const img=await frame();
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-haiku-5-5',max_tokens:300,system:SYS,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:img}},{type:'text',text:'Bu an nə görürsən? Müəllim kimi izah et.'}]}]})});
-    const j=await r.json();
-    if(!r.ok)throw new Error(r.status===401?'API açarı səhvdir.':(j.error&&j.error.message)||'Xəta '+r.status);
-    const x=(j.content||[]).map(c=>c.text||'').join(' ').trim();
-    showT(x);say(x);
-  }catch(e){showT(e.name==='NotAllowedError'?'Kamera icazəsi yoxdur.':e.name==='TypeError'?'İnternetə qoşulmaq olmadı.':'Kamera müəllimi: '+e.message)}
-  busy=false;
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('Bu cihazda kamera əlçatan deyil.');
+    cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    video.srcObject=cameraStream; await video.play();
+    showT('Kamera açıqdır. Nişanın növünü aşağıdan seç.');
+  }catch(e){panel.style.display='none';showT(e.name==='NotAllowedError'?'Kamera icazəsi verilmədi. Telefon ayarlarından icazə ver.':e.message||'Kamera açıla bilmədi.');}
 }
-$('cam').onclick=teach;
-$('auto').onclick=()=>{if(autoT){clearInterval(autoT);autoT=null;$('auto').textContent='⏱';return}teach();autoT=setInterval(teach,25000);$('auto').textContent='⏱ ✓'};
+function closeOfflineCamera(){
+  if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
+  $('cameraVideo').srcObject=null; $('cameraPanel').style.display='none';
+}
+$('cameraChoices').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-say]'); if(!b)return;
+  const text=b.getAttribute('data-say'); showT(text); say(text);
+});
+$('closeCamera').onclick=closeOfflineCamera;
+$('cam').onclick=openOfflineCamera;
+$('auto').onclick=()=>{showT('Avtomatik kamera analizi bu versiyada mövcud deyil. Offline kamera köməkçisində nişanı özün seç.');openOfflineCamera();};
+$('stop').onclick=()=>{
+  if(timer){clearInterval(timer);timer=null;}
+  if(watchId!=null&&navigator.geolocation)navigator.geolocation.clearWatch(watchId);
+  watchId=null; if(autoT){clearInterval(autoT);autoT=null;}
+  closeOfflineCamera(); if('speechSynthesis' in window)speechSynthesis.cancel();
+  if(TTS)TTS.stop().catch(()=>{});
+  $('fast').style.display='none'; $('intro').style.display='flex';
+  $('rt').textContent='Dayandırıldı. Yeni rejim seçə bilərsən.';
+  setS('','…',0,'AC Nav dayandırılıb','Naviqasiya və ya simulyasiyanı yenidən başlat.');
+};
 $('go').onclick=()=>begin(false);
 $('demo').onclick=()=>begin(true);
 </script>
