@@ -44,7 +44,12 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
 #cv,#cc{position:absolute;inset:0;width:100%;height:100%}#cv{object-fit:contain}
 #ci{position:absolute;left:0;right:0;bottom:0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0));background:rgba(0,0,0,.65);font-size:18px;font-weight:700;line-height:1.3;min-height:64px}
 #cx{position:absolute;top:calc(10px + env(safe-area-inset-top,0));right:10px}
-#tch{z-index:1900}
+#tch{z-index:3000}
+.b{touch-action:manipulation}
+#intro{display:block;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(18px + env(safe-area-inset-top,0)) 20px 40px}
+#intro>*{display:block;margin:0 0 12px}
+#intro h1{font-size:34px}
+#intro .b{width:100%}
 </style>
 </head>
 <body>
@@ -66,15 +71,16 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
 <div id="tch"></div>
 <div id="intro">
   <h1>AC Nav</h1>
-  <p>Səsli müəllim: yolda gördüklərini Azərbaycan dilində deyir. STOP, yol ver, piyada keçidi, svetofor, dairəvi hərəkət və sürət limiti xəritə məlumatına görə xəbərdarlıq edilir.</p>
-  <p>Nişanlar, zolaqlar və qadağalar xəritə (OSM) məlumatına görədir. 📷 Kamera telefonun içində işləyir (açar lazım deyil): 63 yol nişanını, svetoforu, piyadanı və maşınları tanıyır (zəif işıqda və uzaqda səhv edə bilər). Nişan modeli: StreetSignSense (A. Ferrante, MIT). Bu proqram köməkçidir, sürücünün məsuliyyətini əvəz etmir.</p>
+  <p id="err" style="color:#ff6b6b"></p>
   <input id="from" placeholder="Haradan (boş = mənim yerim)" autocomplete="off">
   <input id="to" placeholder="Hara gedirsən? (məs: Gəncə)" autocomplete="off">
-  <button class="b" id="vtest">🔊 Səsi yoxla</button>
-  <p id="rt"></p><p id="vnote" style="color:#e0a21a"></p>
-  <button class="b" id="gm">🗺 Google Maps-da aç</button>
   <button class="b" id="go">Naviqasiya (GPS ilə)</button>
   <button class="b" id="demo">Simulyasiya (maşın sürmədən)</button>
+  <button class="b" id="gm">🗺 Google Maps-da aç</button>
+  <button class="b" id="vtest">🔊 Səsi yoxla</button>
+  <p id="rt"></p><p id="vnote" style="color:#e0a21a"></p>
+  <p>Səsli müəllim: yolda gördüklərini Azərbaycan dilində deyir. STOP, yol ver, piyada keçidi, svetofor, dairəvi hərəkət və sürət limiti xəritə məlumatına görə xəbərdarlıq edilir.</p>
+  <p>Nişanlar, zolaqlar və qadağalar xəritə (OSM) məlumatına görədir. 📷 Kamera telefonun içində işləyir (açar lazım deyil): 63 yol nişanını, svetoforu, piyadanı və maşınları tanıyır (zəif işıqda və uzaqda səhv edə bilər). Nişan modeli: StreetSignSense (A. Ferrante, MIT). Bu proqram köməkçidir, sürücünün məsuliyyətini əvəz etmir.</p>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
@@ -82,7 +88,9 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
 const $=id=>document.getElementById(id);
 var tt=null;
 function showT(x){const e=$('tch');e.textContent=x;e.style.display='block';clearTimeout(tt);tt=setTimeout(()=>e.style.display='none',15000)}
-window.addEventListener('error',e=>showT('Xəta: '+e.message));
+window.addEventListener('error',e=>{showT('Xəta: '+e.message);const x=$('err');if(x)x.textContent='Xəta: '+e.message+' (sətir '+(e.lineno||'?')+')'});
+window.addEventListener('unhandledrejection',e=>{const x=$('err');if(x)x.textContent='Xəta: '+((e.reason&&e.reason.message)||e.reason)});
+$('go').onclick=()=>begin(false);$('demo').onclick=()=>begin(true);
 const R=6371000,rad=x=>x*Math.PI/180;
 function dist(a,b,c,d){const p=rad(c-a),q=rad(d-b);const x=Math.sin(p/2)**2+Math.cos(rad(a))*Math.cos(rad(c))*Math.sin(q/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
 function brg(a,b,c,d){const y=Math.sin(rad(d-b))*Math.cos(rad(c));const x=Math.cos(rad(a))*Math.sin(rad(c))-Math.sin(rad(a))*Math.cos(rad(c))*Math.cos(rad(d-b));return(Math.atan2(y,x)*180/Math.PI+360)%360}
@@ -108,7 +116,7 @@ Object.assign(T.rail,{e:'Şlaqbaum bağlıdırsa və ya qırmızı işıq yanır
 let map,me,hl,hz={},ann={},heading=null,last=null,lim=null,voiceOn=true,voice=null,watchId=null,timer=null,lastFetch=null,lastRound=0,lastSp=0,rw={},lastPos=null,lastW=null,curSpd=0;
 
 /* Səs: əvvəl telefonun öz TTS-i (Android), sonra brauzer səsi. Azərbaycan yoxdursa türk */
-const TTS=(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())?Capacitor.registerPlugin('TextToSpeech'):null;
+let TTS=null;try{if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())TTS=Capacitor.registerPlugin('TextToSpeech')}catch(e){TTS=null}
 let ttsLang='az-AZ';
 const trFix=t=>t.replace(/ə/g,'e').replace(/Ə/g,'E').replace(/x/g,'h').replace(/X/g,'H').replace(/q/g,'k').replace(/Q/g,'K');
 async function initTTS(){
@@ -120,7 +128,7 @@ async function initTTS(){
 }
 function pickVoice(){if(TTS||!('speechSynthesis' in window))return;voice=speechSynthesis.getVoices().find(x=>/^tr/i.test(x.lang))||null}
 if('speechSynthesis' in window){speechSynthesis.onvoiceschanged=pickVoice;pickVoice()}
-initTTS();
+initTTS().catch(()=>{});
 function say(t){
   if(!voiceOn)return;
   try{
@@ -316,8 +324,8 @@ function setupAC(id){
     },600);
   });
 }
-setupAC('from');setupAC('to');
-if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{lastPos=[p.coords.latitude,p.coords.longitude]},()=>{},{timeout:8000,maximumAge:120000});
+try{setupAC('from');setupAC('to')}catch(e){}
+try{if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{lastPos=[p.coords.latitude,p.coords.longitude]},()=>{},{timeout:8000,maximumAge:120000})}catch(e){}
 const here=()=>new Promise((ok,no)=>navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>ok([p.coords.latitude,p.coords.longitude]),()=>no(new Error('GPS işləmir. "Haradan" qutusuna ünvan yaz.')),{timeout:12000,maximumAge:60000}):no(new Error('GPS yoxdur')));
 async function buildRoute(a,b){
   const r=await fetch('https://router.project-osrm.org/route/v1/driving/'+a[1]+','+a[0]+';'+b[1]+','+b[0]+'?overview=full&geometries=geojson&steps=true');
