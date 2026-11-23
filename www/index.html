@@ -25,7 +25,7 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
 .u{font-size:12px;color:var(--dim)}
 .lim{width:56px;height:56px;border-radius:50%;border:6px solid #d62828;background:#fff;color:#111;display:grid;place-items:center;font-weight:900;font-size:20px}
 .sp{flex:1}
-.b{border:0;border-radius:12px;background:#2d363e;color:var(--txt);font-size:15px;padding:12px 14px;font-weight:700}
+.b{border:0;border-radius:12px;background:#2d363e;color:var(--txt);font-size:15px;padding:12px 14px;font-weight:700;cursor:pointer;pointer-events:auto;touch-action:manipulation;position:relative;z-index:2}
 #intro{position:fixed;inset:0;z-index:2000;background:var(--ink);display:flex;flex-direction:column;justify-content:center;gap:14px;padding:28px}
 #intro h1{font-size:44px;font-weight:900}
 #intro p{line-height:1.45;color:#cfd6db;max-width:46ch}
@@ -39,7 +39,7 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
 .sug div{padding:10px 14px;border-bottom:1px solid #333d45}
 .sug b{display:block;font-size:16px}.sug small{color:var(--dim)}
 #info{background:#222a31;padding:6px 14px;font-size:15px;color:#cfe3ff;display:none}
-#tch{position:fixed;left:10px;right:10px;top:calc(34% + 44px);z-index:1500;background:rgba(20,26,31,.95);border:2px solid #4aa3ff;border-radius:14px;padding:12px 14px;font-size:17px;line-height:1.35;display:none}
+#tch{pointer-events:none;position:fixed;left:10px;right:10px;top:calc(34% + 44px);z-index:1500;background:rgba(20,26,31,.95);border:2px solid #4aa3ff;border-radius:14px;padding:12px 14px;font-size:17px;line-height:1.35;display:none}
 </style>
 </head>
 <body>
@@ -51,12 +51,12 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
     <div id="spd">0</div><div class="u">km/saat</div>
     <div class="lim" id="lim">–</div>
     <div class="sp"></div>
-    <button class="b" id="cam">📷</button>
-    <button class="b" id="stop">■</button>
-    <button class="b" id="auto">i</button>
-    <button class="b" id="vbtn">🔊</button>
-    <button class="b" id="fast" style="display:none">⏩</button>
-    <button class="b" onclick="location.reload()">Çıx</button>
+    <button type="button" class="b" id="cam">📷</button>
+    <button type="button" class="b" id="stop">■</button>
+    <button type="button" class="b" id="auto">i</button>
+    <button type="button" class="b" id="vbtn">🔊</button>
+    <button type="button" class="b" id="fast" style="display:none">⏩</button>
+    <button type="button" class="b" onclick="location.reload()">Çıx</button>
   </div>
 </div>
 <div id="tch"></div>
@@ -65,16 +65,16 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
   <video id="cameraVideo" playsinline autoplay muted style="width:100%;max-height:42vh;object-fit:contain;background:#222;border-radius:12px"></video>
   <p style="margin:12px 0;color:#cfd6db;line-height:1.4">Kamera görüntüsü telefonda qalır. Bu versiyada avtomatik süni intellekt tanıma yoxdur. Gördüyün nişanı seç — müəllim qaydanı internet və API açarı olmadan səsləndirəcək.</p>
   <div id="cameraChoices" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-    <button class="b" data-say="STOP nişanı. Xəttdən əvvəl tam dayan. Təhlükəsizliyi yoxla, sonra yol açıqdırsa davam et.">🛑 STOP</button>
-    <button class="b" data-say="Yol ver nişanı. Kəsişən yolda hərəkət edənlərə yol ver, lazım gələrsə dayan.">🔻 Yol ver</button>
-    <button class="b" data-say="Piyada keçidi. Sürəti azalt, piyadaya yol ver və lazım olduqda dayan.">🚸 Piyada keçidi</button>
-    <button class="b" data-say="Svetofor. İşığın rənginə və yol nişanlarına uyğun hərəkət et.">🚦 Svetofor</button>
-    <button class="b" data-say="Sürət məhdudiyyəti nişanı. Göstərilən sürət həddinə əməl et.">⭕ Sürət həddi</button>
-    <button class="b" data-say="Ötmək qadağandır nişanı. Bu hissədə ötmə etmə.">🚫 Ötmə qadağandır</button>
-    <button class="b" data-say="Dəmir yolu keçidi. Yavaşla, hər iki tərəfi yoxla və qadağanedici siqnal varsa dayan.">🚆 Dəmir yolu</button>
-    <button class="b" data-say="Mən bu nişanı dəqiq müəyyən edə bilmirəm. Rəsmi nişan qaydasını yoxla və ehtiyatlı ol.">❔ Digər nişan</button>
+    <button type="button" class="b" data-say="STOP nişanı. Xəttdən əvvəl tam dayan. Təhlükəsizliyi yoxla, sonra yol açıqdırsa davam et.">🛑 STOP</button>
+    <button type="button" class="b" data-say="Yol ver nişanı. Kəsişən yolda hərəkət edənlərə yol ver, lazım gələrsə dayan.">🔻 Yol ver</button>
+    <button type="button" class="b" data-say="Piyada keçidi. Sürəti azalt, piyadaya yol ver və lazım olduqda dayan.">🚸 Piyada keçidi</button>
+    <button type="button" class="b" data-say="Svetofor. İşığın rənginə və yol nişanlarına uyğun hərəkət et.">🚦 Svetofor</button>
+    <button type="button" class="b" data-say="Sürət məhdudiyyəti nişanı. Göstərilən sürət həddinə əməl et.">⭕ Sürət həddi</button>
+    <button type="button" class="b" data-say="Ötmək qadağandır nişanı. Bu hissədə ötmə etmə.">🚫 Ötmə qadağandır</button>
+    <button type="button" class="b" data-say="Dəmir yolu keçidi. Yavaşla, hər iki tərəfi yoxla və qadağanedici siqnal varsa dayan.">🚆 Dəmir yolu</button>
+    <button type="button" class="b" data-say="Mən bu nişanı dəqiq müəyyən edə bilmirəm. Rəsmi nişan qaydasını yoxla və ehtiyatlı ol.">❔ Digər nişan</button>
   </div>
-  <button class="b" id="closeCamera" style="width:100%;margin-top:12px">Bağla</button>
+  <button type="button" class="b" id="closeCamera" style="width:100%;margin-top:12px">Bağla</button>
 </div>
 <div id="intro">
   <h1>AC Nav</h1>
@@ -82,10 +82,10 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
   <p>📷 Kamera bölməsi internet və API açarı olmadan işləyən köməkçi rejimdir: görüntünü göstərir, nişan növünü özün seçdikdə Azərbaycan dilində izah edir. Avtomatik AI tanıma daxil deyil. Xəritə və marşrut üçün internet lazımdır. Bu proqram köməkçidir, yol nişanlarını və real vəziyyəti özün də yoxla.</p>
   <input id="from" placeholder="Haradan (boş = mənim yerim)" autocomplete="off">
   <input id="to" placeholder="Hara gedirsən? (məs: Gəncə)" autocomplete="off">
-  <button class="b" id="vtest">🔊 Səsi yoxla</button>
+  <button type="button" class="b" id="vtest">🔊 Səsi yoxla</button>
   <p id="rt"></p><p id="vnote" style="color:#e0a21a"></p>
-  <button class="b" id="go">Naviqasiya (GPS ilə)</button>
-  <button class="b" id="demo">Simulyasiya (maşın sürmədən)</button>
+  <button type="button" class="b" id="go">Naviqasiya (GPS ilə)</button>
+  <button type="button" class="b" id="demo">Simulyasiya (maşın sürmədən)</button>
 </div>
 
 <script src="vendor/leaflet.js"></script>
@@ -109,7 +109,7 @@ const T={
 let map,me,hl,hz={},ann={},heading=null,last=null,lim=null,voiceOn=true,voice=null,watchId=null,timer=null,lastFetch=null,lastRound=0,lastSp=0,rw={},lastPos=null,lastW=null;
 
 /* Səs: əvvəl telefonun öz TTS-i (Android), sonra brauzer səsi. Azərbaycan yoxdursa türk */
-const TTS=(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())?Capacitor.registerPlugin('TextToSpeech'):null;
+const TTS=null; // Native plugin wrapper is not bundled; use WebView SpeechSynthesis safely.
 let ttsLang='az-AZ';
 const trFix=t=>t.replace(/ə/g,'e').replace(/Ə/g,'E').replace(/x/g,'h').replace(/X/g,'H').replace(/q/g,'k').replace(/Q/g,'K');
 async function initTTS(){
