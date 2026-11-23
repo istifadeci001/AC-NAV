@@ -1,32 +1,63 @@
-name: APK
-on: [push, workflow_dispatch]
+name: AC Nav Android APK
+on:
+  push:
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: {node-version: 20}
+        with:
+          node-version: 20
+          cache: npm
       - uses: actions/setup-java@v4
-        with: {distribution: temurin, java-version: 17}
-      - run: npm install
-      - run: npx cap add android
-      - name: Download sign model into the app
-        continue-on-error: true
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Bundle TensorFlow libraries locally
         run: |
-          git clone --depth 1 https://github.com/AlessandroFerrante/StreetSignSense.git sss
-          (cd sss && git lfs pull || true)
-          M=$(find sss -type d -name 'yolov12n_web_model' | head -1)
-          echo "model dir: $M"; ls -la "$M"
-          mkdir -p www/models/signs && cp -r "$M"/. www/models/signs/
-          du -sh www/models/signs; find www/models/signs -size -1k
-      - run: |
-          sed -i 's#<application#<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><application#' android/app/src/main/AndroidManifest.xml
-          sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA"/><uses-feature android:name="android.hardware.camera" android:required="false"/><application#' android/app/src/main/AndroidManifest.xml
+          mkdir -p www/vendor
+          cp node_modules/@tensorflow/tfjs/dist/tf.min.js www/vendor/tf.min.js
+          cp node_modules/@tensorflow-models/coco-ssd/dist/coco-ssd.min.js www/vendor/coco-ssd.min.js
+          test -s www/vendor/tf.min.js
+          test -s www/vendor/coco-ssd.min.js
+
+      - name: Download and verify StreetSignSense YOLO12n model
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs install
+          git clone --depth 1 https://github.com/AlessandroFerrante/StreetSignSense.git /tmp/StreetSignSense
+          git -C /tmp/StreetSignSense lfs pull
+          MODEL_DIR=/tmp/StreetSignSense/demo/assets/models/StreetSignSenseY12n_tfjs_converted
+          test -s "$MODEL_DIR/model.json" || { echo "ERROR: YOLO12n model.json missing at $MODEL_DIR"; exit 1; }
+          mkdir -p www/models/signs
+          cp -a "$MODEL_DIR"/. www/models/signs/
+          test -s www/models/signs/model.json
+          echo "Model files copied:"
+          find www/models/signs -maxdepth 2 -type f -printf '%P (%s bytes)\\n'
+          du -sh www/models/signs
+
+      - name: Configure Android and build APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx cap add android
+          sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><uses-feature android:name="android.hardware.camera" android:required="false"/><application#' android/app/src/main/AndroidManifest.xml
           sed -i 's#</manifest>#<queries><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries></manifest>#' android/app/src/main/AndroidManifest.xml
           npx cap sync android
-      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
       - uses: actions/upload-artifact@v4
         with:
-          name: AC-Nav-apk
+          name: AC-Nav-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
