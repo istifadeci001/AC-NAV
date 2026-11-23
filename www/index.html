@@ -1,1 +1,286 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AC Nav</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+:root{--ink:#101418;--panel:#1b2127;--txt:#f2f4f5;--dim:#9aa5ad}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden}
+#app{height:100%;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
+#status{--st:#3a444c;background:var(--st);color:#fff;display:flex;align-items:center;gap:16px;padding:18px;min-height:34%;transition:background .3s}
+#status.go{--st:#1c8f55}
+#status.warn{--st:#e0a21a;color:#1a1200}
+#status.bad{--st:#c9202f}
+#glyph{flex:none;width:92px;height:92px;display:grid;place-items:center;font-size:44px;font-weight:900;background:rgba(255,255,255,.2);border-radius:22px}
+#status.warn #glyph{background:rgba(0,0,0,.12)}
+#glyph.oct{background:#fff;color:#c9202f;font-size:25px;border-radius:0;clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)}
+#t{font-size:clamp(26px,8vw,40px);line-height:1.05;font-weight:900}
+#s{margin-top:6px;font-size:clamp(15px,4.4vw,19px);line-height:1.3}
+#map{flex:1;min-height:0;background:#222}
+#bar{display:flex;align-items:center;gap:12px;background:var(--panel);padding:10px 14px calc(10px + env(safe-area-inset-bottom,0))}
+#spd{font-size:40px;font-weight:900;min-width:64px;text-align:right}
+.u{font-size:12px;color:var(--dim)}
+.lim{width:56px;height:56px;border-radius:50%;border:6px solid #d62828;background:#fff;color:#111;display:grid;place-items:center;font-weight:900;font-size:20px}
+.sp{flex:1}
+.b{border:0;border-radius:12px;background:#2d363e;color:var(--txt);font-size:15px;padding:12px 14px;font-weight:700}
+#intro{position:fixed;inset:0;z-index:2000;background:var(--ink);display:flex;flex-direction:column;justify-content:center;gap:14px;padding:28px}
+#intro h1{font-size:44px;font-weight:900}
+#intro p{line-height:1.45;color:#cfd6db;max-width:46ch}
+#intro .b{font-size:18px;padding:16px}
+#go{background:#1c8f55}
+#intro input{border:0;border-radius:12px;padding:14px;font-size:17px;background:#2d363e;color:#fff;width:100%}
+#rt{color:#9fe3b7;min-height:1.2em}
+.hm{font-size:24px;line-height:28px;text-align:center}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="status"><div id="glyph">…</div><div id="msg"><h1 id="t">AC Nav</h1><p id="s">Başlamaq üçün düyməyə bas.</p></div></div>
+  <div id="map"></div>
+  <div id="bar">
+    <div id="spd">0</div><div class="u">km/saat</div>
+    <div class="lim" id="lim">–</div>
+    <div class="sp"></div>
+    <button class="b" id="vbtn">🔊</button>
+    <button class="b" id="fast" style="display:none">⏩</button>
+    <button class="b" onclick="location.reload()">Çıx</button>
+  </div>
+</div>
+<div id="intro">
+  <h1>AC Nav</h1>
+  <p>Səsli müəllim: yolda gördüklərini Azərbaycan dilində deyir. STOP, yol ver, piyada keçidi, svetofor, dairəvi hərəkət və sürət limiti xəritə məlumatına görə xəbərdarlıq edilir.</p>
+  <p>Xəritədə olmayan nişanları bilmir. Bu proqram köməkçidir, sürücünün məsuliyyətini əvəz etmir.</p>
+  <input id="from" placeholder="Haradan (boş = mənim yerim)" autocomplete="off">
+  <input id="to" placeholder="Hara gedirsən? (məs: Gəncə)" autocomplete="off">
+  <p id="rt"></p><p id="vnote" style="color:#e0a21a"></p>
+  <button class="b" id="go">Naviqasiya (GPS ilə)</button>
+  <button class="b" id="demo">Simulyasiya (maşın sürmədən)</button>
+</div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const R=6371000,rad=x=>x*Math.PI/180;
+function dist(a,b,c,d){const p=rad(c-a),q=rad(d-b);const x=Math.sin(p/2)**2+Math.cos(rad(a))*Math.cos(rad(c))*Math.sin(q/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
+function brg(a,b,c,d){const y=Math.sin(rad(d-b))*Math.cos(rad(c));const x=Math.cos(rad(a))*Math.sin(rad(c))-Math.sin(rad(a))*Math.cos(rad(c))*Math.cos(rad(d-b));return(Math.atan2(y,x)*180/Math.PI+360)%360}
+const adiff=(a,b)=>{const d=Math.abs(a-b)%360;return d>180?360-d:d};
+
+const T={
+ stop:{m:'🛑',g:'STOP',oct:1,range:150,t:'Qarşıda STOP',s:'Tam dayanmalısan.',w:'Qarşıda STOP nişanı var. Sürəti azalt.'},
+ give_way:{m:'🔻',g:'▽',range:120,t:'Yol ver',s:'Əsas yolda gedənlərə yol ver.',w:'Qarşıda yol ver nişanı. Əsas yolda gedənlərə yol ver.'},
+ crossing:{m:'🚸',g:'🚶',range:80,t:'Piyada keçidi',s:'Piyada varsa dayan.',w:'Piyada keçidi. Piyada varsa dayan.'},
+ signals:{m:'🚦',g:'🚦',range:110,t:'Svetofor',s:'İşığın rəngini özün yoxla.',w:'Qarşıda svetofor. İşığın rəngini özün yoxla.'},
+ round:{m:'🔄',g:'⟳',range:120,t:'Dairəvi hərəkət',s:'Yol ver nişanı varsa, dairədəkinə yol ver.',w:'Dairəvi hərəkət. Yol ver nişanı varsa, dairədəkinə yol ver.'}
+};
+let map,me,hl,hz={},ann={},heading=null,last=null,lim=null,voiceOn=true,voice=null,watchId=null,timer=null,lastFetch=null,lastRound=0,lastSp=0;
+
+/* Səs */
+function pickVoice(){
+  if(!('speechSynthesis' in window))return;
+  const v=speechSynthesis.getVoices();
+  voice=v.find(x=>/^az/i.test(x.lang))||null;
+  if(!voice){voice=v.find(x=>/^tr/i.test(x.lang))||null;
+    $('vnote').textContent=voice?'Azərbaycan səsi tapılmadı, türk səsi işlədilir.':'Bu cihazda səs tapılmadı. Telefon ayarlarında "Mətnin səsləndirilməsi" yoxlayın.'}
+}
+if('speechSynthesis' in window){speechSynthesis.onvoiceschanged=pickVoice;pickVoice()}
+function say(t){
+  if(!voiceOn||!('speechSynthesis' in window))return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);u.lang=voice?voice.lang:'az-AZ';if(voice)u.voice=voice;u.rate=.95;
+  speechSynthesis.speak(u);
+}
+$('vbtn').onclick=()=>{voiceOn=!voiceOn;$('vbtn').textContent=voiceOn?'🔊':'🔇';if(voiceOn)say('Salam, mən AC Nav. Səsim eşidilirmi?')};
+
+/* Xəritə */
+function initMap(lat,lon){
+  map=L.map('map',{zoomControl:false,attributionControl:true}).setView([lat,lon],17);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+  me=L.circleMarker([lat,lon],{radius:9,color:'#fff',weight:3,fillColor:'#1976ff',fillOpacity:1}).addTo(map);
+  hl=L.layerGroup().addTo(map);
+}
+function addHz(id,h){
+  if(hz[id])return;hz[id]=h;
+  L.marker([h.lat,h.lon],{icon:L.divIcon({className:'hm',html:T[h.k].m,iconSize:[28,28]}),interactive:false}).addTo(hl);
+}
+function setS(c,g,o,t,s){$('status').className=c;$('glyph').className=o?'oct':'';$('glyph').textContent=g;$('t').textContent=t;$('s').textContent=s}
+
+/* Əsas məntiq */
+function onPos(lat,lon,spd,hd){
+  if(hd!=null)heading=hd;
+  const nav=navTick(lat,lon);
+  me.setLatLng([lat,lon]);map.setView([lat,lon],Math.max(map.getZoom(),16),{animate:false});
+  $('spd').textContent=Math.round(spd);$('lim').textContent=lim||'–';
+  let best=null,bd=1e9;
+  if(heading!=null)for(const id in hz){
+    const h=hz[id],c=T[h.k],d=dist(lat,lon,h.lat,h.lon);
+    if(d>350)delete ann[id];
+    if(d>c.range||adiff(brg(lat,lon,h.lat,h.lon),heading)>55)continue;
+    const st=ann[id]||0;
+    if(h.k==='stop'){
+      if(d<=45&&st<2){ann[id]=2;say('Stop! Dayan.')}
+      else if(st<1){ann[id]=1;say(c.w)}
+      if(d<=40&&spd<6&&ann[id]===2){ann[id]=3;say('Sağa bax, sola bax, qarşıdan gələnə yol ver.')}
+    }else if(st<1){
+      ann[id]=1;
+      if(h.k!=='round'||Date.now()-lastRound>25000){say(c.w);if(h.k==='round')lastRound=Date.now()}
+    }
+    if(d<bd){bd=d;best=h}
+  }
+  const sp=Math.round(spd);
+  if(best&&best.k==='stop'&&bd<=45){
+    if(bd<=40&&spd<6)setS('bad','👀',0,'Sağa və sola bax','Yol açıqdırsa hərəkət et.');
+    else setS('bad','STOP',1,'STOP! Dayan','Tam dayanmadan keçmə.');
+  }else if(lim&&spd>lim+3){
+    setS('bad',sp,0,'Sürət yüksəkdir','Limit '+lim+', sən '+sp+' km/saat.');
+    if(Date.now()-lastSp>20000){lastSp=Date.now();say('Sürət limiti '+lim+'. Yavaşla.')}
+  }else if(best){
+    const c=T[best.k];setS('warn',c.g,c.oct,c.t+', '+Math.round(bd)+' m',c.s);
+  }else setS('go',nav?nav.g:'✓',0,nav?nav.t:'Yol aydındır',nav?nav.s:'Xəritədə qarşıda xəbərdarlıq yoxdur.');
+}
+
+/* Real GPS + Overpass (pulsuz ictimai API, internet lazımdır) */
+async function load(lat,lon){
+  lastFetch=[lat,lon];
+  const q='[out:json][timeout:15];(node(around:450,'+lat+','+lon+')[highway~"^(stop|give_way|traffic_signals|crossing)$"];way(around:450,'+lat+','+lon+')[junction=roundabout];way(around:20,'+lat+','+lon+')[highway][maxspeed];);out center tags;';
+  try{
+    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)});
+    const j=await r.json();let nl=null;
+    for(const e of j.elements){
+      const t=e.tags||{};
+      if(e.type==='way'&&t.highway&&t.maxspeed&&nl==null){const v=parseInt(t.maxspeed);if(v>0)nl=v}
+      let k=null;
+      if(t.highway==='stop')k='stop';else if(t.highway==='give_way')k='give_way';else if(t.highway==='traffic_signals')k='signals';
+      else if(t.highway==='crossing'&&e.type==='node')k='crossing';else if(t.junction==='roundabout')k='round';
+      if(!k)continue;
+      const p=e.type==='node'?e:e.center;if(p)addHz(e.type+e.id,{k,lat:p.lat,lon:p.lon});
+    }
+    lim=nl;
+  }catch(err){lastFetch=null;$('s').textContent='Yol məlumatı yüklənmədi. İnterneti yoxla.'}
+}
+/* Marşrut (Nominatim + OSRM, pulsuz ictimai serverlər) */
+let steps=[],ni=0,nann={},rq=false,simK=1;
+const DIR={'right':'sağa','left':'sola','slight right':'azca sağa','slight left':'azca sola','sharp right':'kəskin sağa','sharp left':'kəskin sola','uturn':'geri'};
+const ARR={'right':'➡','slight right':'➡','sharp right':'➡','left':'⬅','slight left':'⬅','sharp left':'⬅','uturn':'↩'};
+function stepTxt(s){
+  const m=s.maneuver,ty=m.type;
+  if(ty==='arrive')return{v:'Təyinat nöqtəsinə çatırsınız',g:'🏁',a:'Təyinat'};
+  if(ty==='roundabout'||ty==='rotary')return{v:'dairəvi hərəkətdə '+(m.exit||1)+'-ci çıxışdan çıxın',g:'⟳',a:'Dairədə '+(m.exit||1)+'-ci çıxış'};
+  const d=DIR[m.modifier];if(!d||ty==='depart')return null;
+  return{v:d+' dönün',g:ARR[m.modifier],a:d+' dön'};
+}
+function navTick(lat,lon){
+  while(ni<steps.length){
+    const s=steps[ni],d=dist(lat,lon,s.lat,s.lon),arr=s.tx.g==='🏁';
+    if(arr&&d<30){if(!nann.e){nann.e=1;say('Təyinat nöqtəsinə çatdınız.')}return{g:'🏁',t:'Çatdınız',s:'Təyinat nöqtəsi'}}
+    if(!arr&&d<35){ni++;continue}
+    if(d<=180&&!nann[ni+'a']){nann[ni+'a']=1;say(Math.round(d/10)*10+' metr sonra '+s.tx.v)}
+    if(d<=40&&!nann[ni+'b']){nann[ni+'b']=1;say(s.tx.v)}
+    return d<=300?{g:s.tx.g,t:Math.round(d)+' m, '+s.tx.a,s:'Növbəti manevr'}:{g:'⬆',t:'Düz get',s:Math.round(d/10)*10+' m sonra: '+s.tx.a};
+  }
+  return null;
+}
+async function geo(q){
+  const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=az&accept-language=az&q='+encodeURIComponent(q));
+  const j=await r.json();if(!j.length)throw new Error('"'+q+'" tapılmadı');
+  return[parseFloat(j[0].lat),parseFloat(j[0].lon)];
+}
+const here=()=>new Promise((ok,no)=>navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>ok([p.coords.latitude,p.coords.longitude]),()=>no(new Error('GPS işləmir. "Haradan" qutusuna ünvan yaz.')),{timeout:12000,maximumAge:60000}):no(new Error('GPS yoxdur')));
+async function buildRoute(a,b){
+  const r=await fetch('https://router.project-osrm.org/route/v1/driving/'+a[1]+','+a[0]+';'+b[1]+','+b[0]+'?overview=full&geometries=geojson&steps=true');
+  const j=await r.json();if(j.code!=='Ok')throw new Error('Marşrut tapılmadı');
+  const rt=j.routes[0];steps=[];ni=0;nann={};
+  rt.legs[0].steps.forEach(s=>{const tx=stepTxt(s);if(tx)steps.push({lat:s.maneuver.location[1],lon:s.maneuver.location[0],tx})});
+  return{pts:rt.geometry.coordinates.map(c=>[c[1],c[0]]),km:(rt.distance/1000).toFixed(1),min:Math.round(rt.duration/60)};
+}
+function drawRoute(r){
+  L.polyline(r.pts,{color:'#1976ff',weight:7,opacity:.75}).addTo(map);
+  L.marker(r.pts[r.pts.length-1],{icon:L.divIcon({className:'hm',html:'🏁',iconSize:[28,28]}),interactive:false}).addTo(map);
+}
+function simRoute(pts){
+  let i=0,p=pts[0],hold=0;const done={};
+  timer=setInterval(()=>{
+    if(i>=pts.length-1){clearInterval(timer);onPos(p[0],p[1],0,null);return}
+    const nx=pts[i+1],hd=brg(p[0],p[1],nx[0],nx[1]);
+    let v=Math.min(lim||50,45);
+    if(hold>0){hold-=.5;v=0}
+    else for(const id in hz){
+      const h=hz[id],d=dist(p[0],p[1],h.lat,h.lon);
+      if(d>70||done[id]||adiff(brg(p[0],p[1],h.lat,h.lon),hd)>55)continue;
+      if(h.k==='stop'){if(d<7){done[id]=1;hold=5;v=0}else v=Math.min(v,Math.max(4,(d-6)*.6))}
+      else if(h.k==='crossing'||h.k==='signals')v=Math.min(v,25);
+    }
+    const m=v/3.6*.5*simK,dd=dist(p[0],p[1],nx[0],nx[1]);
+    if(m>=dd){p=nx;i++}else{const t=m/dd;p=[p[0]+(nx[0]-p[0])*t,p[1]+(nx[1]-p[1])*t]}
+    onPos(p[0],p[1],v,hd);
+    if(!lastFetch||dist(lastFetch[0],lastFetch[1],p[0],p[1])>200)load(p[0],p[1]);
+  },500);
+}
+
+/* Real GPS */
+function startReal(dest){
+  initMap(40.4093,49.8671);
+  if(!navigator.geolocation||!window.isSecureContext){setS('bad','!',0,'GPS işləmir','Faylı brauzerdə deyil, APK içində aç.');return}
+  setS('','…',0,'GPS axtarılır','Açıq yerdə bir neçə saniyə gözlə.');
+  if(navigator.wakeLock)navigator.wakeLock.request('screen').catch(()=>{});
+  let hi=true,got=false;
+  const ok=p=>{
+    got=true;const c=p.coords;let hd=null;
+    if(c.heading!=null&&!isNaN(c.heading)&&c.speed>1)hd=c.heading;
+    if(last&&dist(last[0],last[1],c.latitude,c.longitude)>4){if(hd==null)hd=brg(last[0],last[1],c.latitude,c.longitude);last=[c.latitude,c.longitude]}
+    else if(!last)last=[c.latitude,c.longitude];
+    if(dest&&!rq){rq=true;buildRoute([c.latitude,c.longitude],dest).then(r=>{drawRoute(r);say('Marşrut '+r.km+' kilometr, təxminən '+r.min+' dəqiqə.')}).catch(e=>say('Marşrut qurulmadı. İnterneti yoxla.'))}
+    onPos(c.latitude,c.longitude,c.speed!=null&&c.speed>=0?c.speed*3.6:0,hd);
+    if(!lastFetch||dist(lastFetch[0],lastFetch[1],c.latitude,c.longitude)>200)load(c.latitude,c.longitude);
+  };
+  const err=e=>{
+    if(e.code===1){setS('bad','!',0,'İcazə yoxdur','Telefon ayarlarında AC Nav üçün Yer təyininə icazə ver.');return}
+    if(!got&&hi){hi=false;navigator.geolocation.clearWatch(watchId);watchId=navigator.geolocation.watchPosition(ok,err,{enableHighAccuracy:false,maximumAge:5000,timeout:30000});setS('',"…",0,'Təxmini yer axtarılır','Telefonda Yer (Location) açıq olmalıdır.')}
+    else if(!got)setS('bad','!',0,'GPS siqnalı yoxdur','Yer (Location) açıqdırmı? Açıq yerdə yoxla.');
+  };
+  watchId=navigator.geolocation.watchPosition(ok,err,{enableHighAccuracy:true,maximumAge:1000,timeout:20000});
+}
+
+/* Sınaq rejimi: maşın sürmədən yoxlamaq üçün */
+function startDemo(){
+  const lat0=40.4093,lon0=49.8671,M=m=>lat0+m/111320;
+  initMap(lat0,lon0);lim=50;
+  addHz('d1',{k:'crossing',lat:M(120),lon:lon0});
+  addHz('d2',{k:'stop',lat:M(260),lon:lon0});
+  addHz('d3',{k:'signals',lat:M(430),lon:lon0});
+  heading=0;let d=0,hold=0,held=false;
+  timer=setInterval(()=>{
+    let v;
+    if(hold>0){hold-=.5;v=0}
+    else if(!held&&d>=256){held=true;hold=6;v=0}
+    else if(!held)v=d<200?40:Math.max(3,40*(258-d)/58);
+    else v=d<340?62:40;
+    d+=v/3.6*.5;
+    if(d>520){d=0;held=false;ann={}}
+    onPos(M(d),lon0,v,0);
+  },500);
+}
+
+const hide=()=>$('intro').style.display='none';
+$('fast').onclick=()=>{simK=simK===1?4:1;$('fast').textContent=simK===1?'⏩':'⏩×4'};
+async function begin(sim){
+  $('rt').textContent='';const fr=$('from').value.trim(),to=$('to').value.trim();
+  try{
+    if(sim&&!to){hide();say('Sınaq başlayır.');startDemo();return}
+    $('rt').textContent='Axtarılır…';
+    const b=to?await geo(to):null;
+    if(!sim){hide();say('AC Nav hazırdır.');startReal(b);return}
+    const a=fr?await geo(fr):await here();
+    const r=await buildRoute(a,b);
+    hide();initMap(a[0],a[1]);drawRoute(r);
+    say('Marşrut '+r.km+' kilometr, təxminən '+r.min+' dəqiqə.');
+    $('fast').style.display='';simRoute(r.pts);
+  }catch(e){$('rt').textContent=e.name==='TypeError'?'İnternetə qoşulmaq olmadı.':e.message}
+}
+$('go').onclick=()=>begin(false);
+$('demo').onclick=()=>begin(true);
+</script>
+</body>
+</html>
