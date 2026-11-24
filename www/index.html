@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AC Nav</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css'">
 <style>
 :root{--ink:#101418;--panel:#1b2127;--txt:#f2f4f5;--dim:#9aa5ad}
 *{box-sizing:border-box;margin:0}
@@ -43,6 +43,12 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
 #camv{position:fixed;inset:0;z-index:1800;background:#000;display:none}
 #cv,#cc{position:absolute;inset:0;width:100%;height:100%}#cv{object-fit:contain}
 #ci{position:absolute;left:0;right:0;bottom:0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0));background:rgba(0,0,0,.65);font-size:18px;font-weight:700;line-height:1.3;min-height:64px}
+#cn{position:absolute;left:10px;right:10px;top:calc(62px + env(safe-area-inset-top,0));z-index:5;border-radius:16px;padding:12px 16px;color:#fff;background:rgba(40,50,58,.92);display:none;box-shadow:0 4px 18px rgba(0,0,0,.5)}
+#cn b{display:block;font-size:clamp(22px,7vw,32px);line-height:1.1;font-weight:900}
+#cn span{display:block;margin-top:5px;font-size:clamp(15px,4.3vw,18px);line-height:1.3}
+#cn.go{background:rgba(28,143,85,.95)}#cn.warn{background:rgba(224,162,26,.97);color:#1a1200}#cn.bad{background:rgba(201,32,47,.96)}
+#cm{position:absolute;top:calc(10px + env(safe-area-inset-top,0));left:10px}
+#cd{position:absolute;left:8px;right:8px;bottom:calc(84px + env(safe-area-inset-bottom,0));z-index:4;font:12px/1.3 monospace;color:#9fe3b7;background:rgba(0,0,0,.5);padding:3px 8px;border-radius:8px;word-break:break-all}
 #cx{position:absolute;top:calc(10px + env(safe-area-inset-top,0));right:10px}
 #tch{z-index:3000}
 .b{touch-action:manipulation}
@@ -67,7 +73,7 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
     <button class="b" onclick="location.reload()">Çıx</button>
   </div>
 </div>
-<div id="camv"><video id="cv" playsinline muted></video><canvas id="cc"></canvas><div id="ci"></div><button class="b" id="cx">✕ Bağla</button></div>
+<div id="camv"><video id="cv" playsinline muted></video><canvas id="cc"></canvas><div id="cn"></div><div id="cd"></div><div id="ci"></div><button class="b" id="cm">🧠 Hər şey</button><button class="b" id="cx">✕ Bağla</button></div>
 <div id="tch"></div>
 <div id="intro">
   <h1>AC Nav</h1>
@@ -83,7 +89,8 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
   <p>Nişanlar, zolaqlar və qadağalar xəritə (OSM) məlumatına görədir. 📷 Kamera telefonun içində işləyir (açar lazım deyil): 63 yol nişanını, svetoforu, piyadanı və maşınları tanıyır (zəif işıqda və uzaqda səhv edə bilər). Nişan modeli: StreetSignSense (A. Ferrante, MIT). Bu proqram köməkçidir, sürücünün məsuliyyətini əvəz etmir.</p>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script>window.L||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"><\/script>')</script>
 <script>
 const $=id=>document.getElementById(id);
 var tt=null;
@@ -128,20 +135,29 @@ async function initTTS(){
     $('vnote').textContent=L.length?('Səs mühərriki var, '+L.length+' dil. Seçilən: '+ttsLang+(/^tr/i.test(ttsLang)?' (türk)':' (türk səsi yoxdur!)')):'Telefonda səs mühərriki yoxdur. Play Store-dan "Speech Services by Google" quraşdır.';
   }catch(e){$('vnote').textContent='Səs mühərriki xətası: '+(e&&e.message||e)}
 }
-function pickVoice(){if(TTS||!('speechSynthesis' in window))return;voice=speechSynthesis.getVoices().find(x=>/^tr/i.test(x.lang))||null}
+function pickVoice(){if(TTS||!('speechSynthesis' in window))return;const V=speechSynthesis.getVoices();voice=V.find(x=>/^az/i.test(x.lang))||V.find(x=>/^tr/i.test(x.lang))||null}
 if('speechSynthesis' in window){speechSynthesis.onvoiceschanged=pickVoice;pickVoice()}
 initTTS().catch(()=>{});
-function say(t){
-  if(!voiceOn)return;
+function webSay(t){
+  if(!('speechSynthesis' in window))return false;
+  const az=voice&&/^az/i.test(voice.lang);
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(az?t:trFix(t));u.lang=voice?voice.lang:'tr-TR';if(voice)u.voice=voice;u.rate=.95;speechSynthesis.speak(u);return true;
+}
+let spkUntil=0;
+/* low=true: yalnız danışmırsa de (kameranın "adını çəkmə" mesajları təhlükə xəbərdarlığını kəsməsin) */
+function say(t,low){
+  if(!voiceOn)return false;
+  if(low&&Date.now()<spkUntil)return false;
+  spkUntil=Date.now()+Math.min(9000,1200+t.length*85);
   try{
     if(TTS){
       const tr=/^tr/i.test(ttsLang);
-      TTS.stop().catch(()=>{}).then(()=>TTS.speak({text:tr?trFix(t):t,lang:ttsLang,rate:.95,pitch:1,volume:1})).catch(e=>{beep();showT('Səs xətası: '+(e&&e.message||e))});
-      return}
-    if(!('speechSynthesis' in window)){beep();return}
-    speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(trFix(t));u.lang=voice?voice.lang:'tr-TR';if(voice)u.voice=voice;u.rate=.95;speechSynthesis.speak(u);
+      TTS.stop().catch(()=>{}).then(()=>TTS.speak({text:tr?trFix(t):t,lang:ttsLang,rate:.95,pitch:1,volume:1})).catch(e=>{showT('Telefon səsi xətası: '+(e&&e.message||e)+' → brauzer səsi');if(!webSay(t))beep()});
+      return true}
+    if(!webSay(t))beep();
   }catch(e){beep();showT('Səs xətası: '+e.message)}
+  return true;
 }
 $('vbtn').onclick=()=>{voiceOn=!voiceOn;$('vbtn').textContent=voiceOn?'🔊':'🔇';if(voiceOn)say('Salam, mən AC Nav. Səsim eşidilirmi?')};
 
@@ -434,6 +450,7 @@ $('vtest').onclick=async()=>{
 };
 $('tch').onclick=()=>$('tch').style.display='none';
 $('gm').onclick=async()=>{try{const to=$('to').value.trim();if(!to){$('rt').textContent='Əvvəl "Hara" yaz.';return}const b=await geo(to,'to');window.open('https://www.google.com/maps/dir/?api=1&destination='+b[0]+','+b[1]+'&travelmode=driving','_blank')}catch(e){$('rt').textContent=e.message}};
+function loadAny(l){return l.reduce((p,u)=>p.catch(()=>loadJS(u)),Promise.reject())}
 function loadJS(u){return new Promise((ok,no)=>{const e=document.createElement('script');e.src=u;e.onload=ok;e.onerror=()=>no(new Error('Yüklənmədi (internet?)'));document.head.appendChild(e)})}
 let cmodel=null,camOn=false,cstream=null;const lastSay={};
 const CL={'stop sign':['STOP nişanı',1],'traffic light':['Svetofor',1],'person':['Piyada',0],'car':['Maşın',0],'truck':['Yük maşını',0],'bus':['Avtobus',0],'motorcycle':['Motosiklet',0],'bicycle':['Velosiped',0]};
@@ -449,14 +466,82 @@ function lightColor(v,x,y,w,h){
 const SC=["prio_give_way", "prio_stop", "prio_priority_road", "forb_speed_over_5", "forb_speed_over_10", "forb_speed_over_20", "forb_speed_over_30", "forb_speed_over_40", "forb_speed_over_50", "forb_speed_over_60", "forb_speed_over_70", "forb_speed_over_80", "forb_speed_over_90", "forb_speed_over_100", "forb_speed_over_110", "forb_speed_over_120", "forb_speed_over_130", "forb_no_entry", "forb_no_parking", "forb_no_stopping", "forb_overtake_car", "forb_overtake_trucks", "forb_trucks", "forb_turn_left", "forb_turn_right", "forb_weight_over_3.5t", "forb_weight_over_7.5t", "forb_u_turn", "info_bus_station", "info_crosswalk", "info_highway", "info_one_way", "info_parking", "info_taxi_parking", "warn_children", "warn_construction", "warn_crosswalk", "warn_cyclists", "warn_left_curve", "warn_right_curve", "warn_domestic_animals", "warn_other_dangers", "warn_poor_road_surface", "warn_roundabout", "warn_sharp_left_curve", "warn_sharp_right_curve", "warn_slippery_road", "warn_hump", "warn_traffic_light", "warn_tram", "warn_two_way_traffic", "warn_wild_animals", "mand_bike_lane", "mand_go_left", "mand_go_left_right", "mand_go_right", "mand_go_straight", "mand_go_straight_left", "mand_go_straight_right", "mand_pass_left", "mand_pass_left_right", "mand_pass_right", "mand_roundabout"];
 const SA={"prio_give_way": "Yol ver", "prio_stop": "STOP", "prio_priority_road": "Əsas yol", "forb_no_entry": "Giriş qadağandır", "forb_no_parking": "Park etmək qadağandır", "forb_no_stopping": "Dayanmaq qadağandır", "forb_overtake_car": "Sollamaq qadağandır", "forb_overtake_trucks": "Yük maşınlarına sollama qadağandır", "forb_trucks": "Yük maşınlarına qadağa", "forb_turn_left": "Sola dönmək qadağandır", "forb_turn_right": "Sağa dönmək qadağandır", "forb_weight_over_3.5t": "3,5 tondan ağır maşınlara qadağa", "forb_weight_over_7.5t": "7,5 tondan ağır maşınlara qadağa", "forb_u_turn": "Geri dönmək qadağandır", "info_bus_station": "Avtobus dayanacağı", "info_crosswalk": "Piyada keçidi", "info_highway": "Magistral yol", "info_one_way": "Birtərəfli yol", "info_parking": "Parkinq", "info_taxi_parking": "Taksi dayanacağı", "warn_children": "Diqqət, uşaqlar", "warn_construction": "Yol işləri", "warn_crosswalk": "Diqqət, piyada keçidi", "warn_cyclists": "Diqqət, velosipedçilər", "warn_left_curve": "Sola əyri", "warn_right_curve": "Sağa əyri", "warn_domestic_animals": "Ev heyvanları", "warn_other_dangers": "Təhlükə", "warn_poor_road_surface": "Pis yol səthi", "warn_roundabout": "Qarşıda dairəvi hərəkət", "warn_sharp_left_curve": "Kəskin sola əyri", "warn_sharp_right_curve": "Kəskin sağa əyri", "warn_slippery_road": "Sürüşkən yol", "warn_hump": "Yavaşladıcı", "warn_traffic_light": "Qarşıda svetofor", "warn_tram": "Tramvay yolu", "warn_two_way_traffic": "İkitərəfli hərəkət", "warn_wild_animals": "Vəhşi heyvanlar", "mand_bike_lane": "Velosiped zolağı", "mand_go_left": "Yalnız sola", "mand_go_left_right": "Sola və ya sağa", "mand_go_right": "Yalnız sağa", "mand_go_straight": "Yalnız düz", "mand_go_straight_left": "Düz və ya sola", "mand_go_straight_right": "Düz və ya sağa", "mand_pass_left": "Soldan keç", "mand_pass_left_right": "İki tərəfdən keç", "mand_pass_right": "Sağdan keç", "mand_roundabout": "Dairəvi hərəkət"};
 const signName=cl=>{const c=SC[cl],m=/^forb_speed_over_(\d+)$/.exec(c);return m?'Sürət limiti '+m[1]:(SA[c]||c)};
-let sm=null,smS=640,smNCHW=false;
+
+/* Nişan -> sürücüyə nə etməli (lv: bad=qırmızı, warn=sarı, go=yaşıl, info=boz; q=səsləndirmə: 0 = yalnız ekran) */
+const SI={
+ prio_give_way:{lv:'warn',t:'YOL VER',i:'Yol ver. Əsas yolda gedənlərə, sağdan və soldan gələnlərə yol ver. Yol azad olandan sonra get.'},
+ prio_stop:{lv:'bad',t:'STOP',i:'Stop. Dayanma xəttində tam dayan, hər iki tərəfə bax, əsas yoldakılara yol ver.'},
+ prio_priority_road:{lv:'go',t:'ƏSAS YOL',i:'Sən əsas yoldasan. Kəsişmələrdə üstünlüyün var, amma yan yoldan gələnlərə diqqətli ol.'},
+ forb_no_entry:{lv:'bad',t:'GİRİŞ QADAĞANDIR',i:'Giriş qadağandır. Bu yola girmə.'},
+ forb_no_parking:{lv:'warn',t:'PARK QADAĞANDIR',i:'Park etmək qadağandır.'},
+ forb_no_stopping:{lv:'warn',t:'DAYANMAQ QADAĞANDIR',i:'Dayanmaq qadağandır. Burada dayanma.'},
+ forb_overtake_car:{lv:'warn',t:'SOLLAMA QADAĞANDIR',i:'Sollamaq qadağandır. Qabaqdakı maşını ötmə.'},
+ forb_overtake_trucks:{lv:'warn',t:'YÜK MAŞINI SOLLAMA',i:'Yük maşınlarını sollamaq qadağandır.'},
+ forb_trucks:{lv:'warn',t:'YÜK MAŞINI QADAĞA',i:'Yük maşınlarına giriş qadağandır.'},
+ forb_turn_left:{lv:'warn',t:'SOLA DÖNMƏ QADAĞAN',i:'Sola dönmək qadağandır. Düz get və ya sağa dön.'},
+ forb_turn_right:{lv:'warn',t:'SAĞA DÖNMƏ QADAĞAN',i:'Sağa dönmək qadağandır. Düz get və ya sola dön.'},
+ forb_u_turn:{lv:'warn',t:'GERİ DÖNMƏ QADAĞAN',i:'Geri dönmək qadağandır.'},
+ 'forb_weight_over_3.5t':{lv:'warn',t:'3,5 TON LİMİT',i:'3,5 tondan ağır maşınlara qadağa.'},
+ 'forb_weight_over_7.5t':{lv:'warn',t:'7,5 TON LİMİT',i:'7,5 tondan ağır maşınlara qadağa.'},
+ info_crosswalk:{lv:'warn',t:'PİYADA KEÇİDİ',i:'Piyada keçidi. Yavaşla, piyada varsa dayan və keçirt.'},
+ info_one_way:{lv:'info',t:'BİRTƏRƏFLİ YOL',i:'Birtərəfli yol. Əks istiqamətdə getmə.'},
+ info_highway:{lv:'info',t:'MAGİSTRAL',i:'Magistral yol. Piyada və velosiped girə bilməz, dayanmaq qadağandır.'},
+ info_bus_station:{lv:'info',t:'AVTOBUS DAYANACAĞI',i:'Avtobus dayanacağı. Avtobus və piyada üçün diqqətli ol.'},
+ info_parking:{lv:'info',t:'PARKİNQ',i:'Parkinq yeri.',q:0},
+ info_taxi_parking:{lv:'info',t:'TAKSİ DAYANACAĞI',i:'Taksi dayanacağı.',q:0},
+ warn_children:{lv:'warn',t:'UŞAQLAR',i:'Diqqət, uşaqlar ola bilər. Sürəti xeyli azalt.'},
+ warn_construction:{lv:'warn',t:'YOL İŞLƏRİ',i:'Yol işləri. Sürəti azalt, işçilərə və konuslara diqqət et.'},
+ warn_crosswalk:{lv:'warn',t:'PİYADA KEÇİDİ',i:'Qarşıda piyada keçidi. Yavaşla, piyada varsa dayan.'},
+ warn_cyclists:{lv:'warn',t:'VELOSİPEDÇİLƏR',i:'Velosipedçilər ola bilər. Ötəndə məsafə saxla.'},
+ warn_left_curve:{lv:'warn',t:'SOLA ƏYRİ',i:'Qarşıda sola əyri. Sürəti azalt, ötmə.'},
+ warn_right_curve:{lv:'warn',t:'SAĞA ƏYRİ',i:'Qarşıda sağa əyri. Sürəti azalt, ötmə.'},
+ warn_sharp_left_curve:{lv:'warn',t:'KƏSKİN SOLA ƏYRİ',i:'Kəskin sola əyri. Yavaşla, ötmə.'},
+ warn_sharp_right_curve:{lv:'warn',t:'KƏSKİN SAĞA ƏYRİ',i:'Kəskin sağa əyri. Yavaşla, ötmə.'},
+ warn_domestic_animals:{lv:'warn',t:'EV HEYVANLARI',i:'Yolda ev heyvanları ola bilər. Yavaşla.'},
+ warn_wild_animals:{lv:'warn',t:'VƏHŞİ HEYVANLAR',i:'Vəhşi heyvanlar yola çıxa bilər. Yavaşla.'},
+ warn_other_dangers:{lv:'warn',t:'TƏHLÜKƏ',i:'Qarşıda təhlükə var. Diqqətli ol, yavaşla.'},
+ warn_poor_road_surface:{lv:'warn',t:'PİS YOL',i:'Yol səthi pisdir. Sürəti azalt.'},
+ warn_slippery_road:{lv:'warn',t:'SÜRÜŞKƏN YOL',i:'Yol sürüşkəndir. Yavaşla, kəskin əyləc və manevr etmə.'},
+ warn_hump:{lv:'warn',t:'YAVAŞLADICI',i:'Qarşıda yavaşladıcı. Sürəti xeyli azalt.'},
+ warn_traffic_light:{lv:'warn',t:'SVETOFOR',i:'Qarşıda svetofor. İşığa bax, qırmızıda dayan.'},
+ warn_tram:{lv:'warn',t:'TRAMVAY',i:'Tramvay yolu. Tramvaya yol ver.'},
+ warn_two_way_traffic:{lv:'warn',t:'İKİTƏRƏFLİ HƏRƏKƏT',i:'İkitərəfli hərəkət başlayır. Öz zolağında qal, sollama.'},
+ warn_roundabout:{lv:'warn',t:'DAİRƏVİ HƏRƏKƏT',i:'Qarşıda dairəvi hərəkət. Yavaşla. Girişdə yol ver nişanı varsa, dairədəkinə yol ver; yoxdursa sağdan gələnə yol ver.'},
+ mand_roundabout:{lv:'go',t:'DAİRƏVİ HƏRƏKƏT',i:'Dairəvi hərəkət. Dairədə saat əqrəbinin əksinə, sağa dönərək get. Girişdə yol ver nişanı varsa, dairədəkinə yol ver. Çıxarkən sağ siqnal ver.'},
+ mand_bike_lane:{lv:'info',t:'VELOSİPED ZOLAĞI',i:'Velosiped zolağı. Maşın bu zolağa girməməlidir.'},
+ mand_go_left:{lv:'go',t:'YALNIZ SOLA',i:'Yalnız sola get.'},
+ mand_go_right:{lv:'go',t:'YALNIZ SAĞA',i:'Yalnız sağa get.'},
+ mand_go_straight:{lv:'go',t:'YALNIZ DÜZ',i:'Yalnız düz get.'},
+ mand_go_left_right:{lv:'go',t:'SOLA VƏ YA SAĞA',i:'Yalnız sola və ya sağa get, düz getmək olmaz.'},
+ mand_go_straight_left:{lv:'go',t:'DÜZ VƏ YA SOLA',i:'Düz və ya sola get. Sağa dönmək olmaz.'},
+ mand_go_straight_right:{lv:'go',t:'DÜZ VƏ YA SAĞA',i:'Düz və ya sağa get. Sola dönmək olmaz.'},
+ mand_pass_left:{lv:'go',t:'SOLDAN KEÇ',i:'Maneəni soldan keç.'},
+ mand_pass_right:{lv:'go',t:'SAĞDAN KEÇ',i:'Maneəni sağdan keç.'},
+ mand_pass_left_right:{lv:'go',t:'İKİ TƏRƏFDƏN KEÇ',i:'Maneəni istənilən tərəfdən keçə bilərsən.'}
+};
+const LVP={bad:4,warn:3,go:2,info:1};
+const seenAt={};
+/* Nişanlar bir-birini tamamlayır: dairə + yol ver = dairədəkinə yol ver */
+function advice(code,spd){
+  const now=Date.now(),rec=n=>now-(seenAt[n]||0)<10000;
+  const m=/^forb_speed_over_(\d+)$/.exec(code);
+  if(m){const n=+m[1];return{k:code,lv:spd>n+3?'bad':'warn',t:'LİMİT '+n,i:'Sürət limiti '+n+'. '+(spd>n+3?'Sən çox sürürsən, yavaşla!':'Sürətini bu həddə saxla.')}}
+  const rb=code==='mand_roundabout'||code==='warn_roundabout';
+  if((rb&&rec('prio_give_way'))||(code==='prio_give_way'&&(rec('mand_roundabout')||rec('warn_roundabout'))))
+    return{k:'rbgw',lv:'warn',t:'DAİRƏ: YOL VER',i:'Dairəvi hərəkət, yol ver nişanı var. Dairədə gedənlərə yol ver, dairə azad olanda gir. Çıxarkən sağ siqnal ver.'};
+  if(rb&&rec('prio_priority_road'))
+    return{k:code,lv:'warn',t:'DAİRƏVİ HƏRƏKƏT',i:'Dairəvi hərəkət. Yavaşla, girişi və dairədəkiləri yoxla.'};
+  const a=SI[code];if(!a)return null;
+  return Object.assign({k:code},a);
+}
+let signSrc='',sm=null,smS=640,smNCHW=false;
 let signErr='';
 async function loadSigns(){
   const urls=['indexeddb://acnav-signs','models/signs/model.json','https://streetsignsense.alessandroferrante.net/demo/assets/models/yolov12n_web_model/model.json','https://alessandroferrante.github.io/StreetSignSense/demo/assets/models/yolov12n_web_model/model.json','https://cdn.jsdelivr.net/gh/AlessandroFerrante/StreetSignSense@main/demo/assets/models/yolov12n_web_model/model.json','https://raw.githubusercontent.com/AlessandroFerrante/StreetSignSense/main/demo/assets/models/yolov12n_web_model/model.json'];
   const errs=[];
   for(const u of urls){
     try{
-      sm=await tf.loadGraphModel(u);
+      sm=await tf.loadGraphModel(u);signSrc=u.startsWith('http')?'internet':u.startsWith('indexeddb')?'yaddaş':'APK';
       if(!u.startsWith('indexeddb'))sm.save('indexeddb://acnav-signs').catch(()=>{});
       const sh=sm.inputs&&sm.inputs[0]&&sm.inputs[0].shape;
       if(sh&&sh.length===4){if(sh[1]===3){smNCHW=true;if(sh[2]>0)smS=sh[2]}else if(sh[1]>0)smS=sh[1]}
@@ -466,18 +551,47 @@ async function loadSigns(){
   signErr=errs.join(' | ');return false;
 }
 function iou(a,b){const x1=Math.max(a.x,b.x),y1=Math.max(a.y,b.y),x2=Math.min(a.x+a.w,b.x+b.w),y2=Math.min(a.y+a.h,b.y+b.h),i=Math.max(0,x2-x1)*Math.max(0,y2-y1);return i/(a.w*a.h+b.w*b.h-i||1)}
-/* YOLO çıxışını açır: [1,67,N] və ya [1,N,67], koordinatlar piksel və ya 0-1 */
-function decodeSigns(d,sh,S,s,px,py,thr){
-  const nc=SC.length,C=nc+4;let N,get;
-  if(sh[1]===C){N=sh[2];get=(c,i)=>d[c*N+i]}else if(sh[2]===C){N=sh[1];get=(c,i)=>d[i*C+c]}else return[];
-  let mw=0;for(let i=0;i<N;i++)mw=Math.max(mw,get(2,i));
-  const k=mw<=2?S:1,c=[];
-  for(let i=0;i<N;i++){
-    let b=0,bs=0;for(let j=0;j<nc;j++){const q=get(4+j,i);if(q>bs){bs=q;b=j}}
-    if(bs<thr)continue;
-    const cx=get(0,i)*k,cy=get(1,i)*k,w=get(2,i)*k,h=get(3,i)*k;
-    c.push({cl:b,sc:bs,x:(cx-w/2-px)/s,y:(cy-h/2-py)/s,w:w/s,h:h/s});
+/* YOLO çıxışını açır. Dəstəklənən formatlar:
+   [1,67,N] / [1,N,67]  - xam YOLO (NMS-i özümüz edirik)
+   [1,N,6] / [1,6,N]    - modelin içində NMS var: x1,y1,x2,y2,skor,sinif */
+const sgDbg={shapes:'',best:null,fmt:'?'};
+function decodeSigns(outs,S,s,px,py,thr){
+  const nc=SC.length,C=nc+4,c=[];let fmt='';
+  sgDbg.shapes=outs.map(o=>'['+o.sh.join(',')+']').join(' ');sgDbg.best=null;
+  for(const {sh,d} of outs){
+    if(sh.length!==3)continue;
+    let N,get,mode;
+    if(sh[1]===C){N=sh[2];get=(q,i)=>d[q*N+i];mode='raw'}
+    else if(sh[2]===C){N=sh[1];get=(q,i)=>d[i*C+q];mode='raw'}
+    else if(sh[2]===6){N=sh[1];get=(q,i)=>d[i*6+q];mode='nms'}
+    else if(sh[1]===6){N=sh[2];get=(q,i)=>d[q*N+i];mode='nms'}
+    else continue;
+    fmt=mode;
+    if(mode==='raw'){
+      let mw=0;for(let i=0;i<N;i++)mw=Math.max(mw,get(2,i));
+      const k=mw<=2?S:1;
+      for(let i=0;i<N;i++){
+        let b=0,bs=0;for(let j=0;j<nc;j++){const q=get(4+j,i);if(q>bs){bs=q;b=j}}
+        if(!sgDbg.best||bs>sgDbg.best.sc)sgDbg.best={cl:b,sc:bs};
+        if(bs<thr)continue;
+        const cx=get(0,i)*k,cy=get(1,i)*k,w=get(2,i)*k,h=get(3,i)*k;
+        c.push({cl:b,sc:bs,x:(cx-w/2-px)/s,y:(cy-h/2-py)/s,w:w/s,h:h/s});
+      }
+    }else{
+      let mx=0;for(let i=0;i<N;i++)mx=Math.max(mx,get(2,i),get(3,i));
+      const k=mx<=2?S:1;
+      for(let i=0;i<N;i++){
+        const sc=get(4,i),cl=Math.round(get(5,i));
+        if(cl<0||cl>=nc)continue;
+        if(!sgDbg.best||sc>sgDbg.best.sc)sgDbg.best={cl,sc};
+        if(sc<thr)continue;
+        let x1=get(0,i)*k,y1=get(1,i)*k,x2=get(2,i)*k,y2=get(3,i)*k;
+        if(x2<x1||y2<y1){const cx=x1,cy=y1,w=x2,h=y2;x1=cx-w/2;y1=cy-h/2;x2=cx+w/2;y2=cy+h/2}
+        c.push({cl,sc,x:(x1-px)/s,y:(y1-py)/s,w:(x2-x1)/s,h:(y2-y1)/s});
+      }
+    }
   }
+  sgDbg.fmt=fmt||'TANINMADI';
   c.sort((a,b)=>b.sc-a.sc);const keep=[];
   for(const a of c){if(keep.every(b=>iou(a,b)<.45))keep.push(a);if(keep.length>=8)break}
   return keep;
@@ -486,23 +600,25 @@ async function detectSigns(v){
   const S=smS,vw=v.videoWidth,vh=v.videoHeight,s=Math.min(S/vw,S/vh),nw=Math.round(vw*s),nh=Math.round(vh*s),px=Math.floor((S-nw)/2),py=Math.floor((S-nh)/2);
   const inp=tf.tidy(()=>{let x=tf.image.resizeBilinear(tf.browser.fromPixels(v),[nh,nw]).pad([[py,S-nh-py],[px,S-nw-px],[0,0]],114).div(255);if(smNCHW)x=x.transpose([2,0,1]);return x.expandDims(0)});
   let out;
-  try {
-    // YOLO modelində NonMaxSuppressionV4 asinxron əməliyyatdır;
-    // buna görə GraphModel.execute() deyil, executeAsync() işlədilməlidir.
-    out = await sm.executeAsync(inp);
-  } finally {
-    inp.dispose();
-  }
-  const arr = Array.isArray(out) ? out : [out];
-  try {
-    const o = arr[0];
-    const sh = o.shape;
-    const d = await o.data();
-    return decodeSigns(d, sh, S, s, px, py, .5);
-  } finally {
-    arr.forEach(t => { if (t && typeof t.dispose === 'function') t.dispose(); });
-  }
+  try{out=await sm.executeAsync(inp)}finally{inp.dispose()}   /* NonMaxSuppression asinxrondur */
+  const arr=Array.isArray(out)?out:[out];
+  try{
+    const outs=[];for(const t of arr)outs.push({sh:t.shape,d:await t.data()});
+    return decodeSigns(outs,S,s,px,py,.4);
+  }finally{arr.forEach(t=>{if(t&&typeof t.dispose==='function')t.dispose()})}
 }
+let bn=null;
+function showBn(){
+  const e=$('cn');
+  if(bn&&Date.now()<bn.until){e.className=bn.a.lv;e.innerHTML='<b></b><span></span>';e.firstChild.textContent=bn.a.t;e.lastChild.textContent=bn.a.i;e.style.display='block'}
+  else{e.style.display='none';bn=null}
+}
+const COCOAZ={person:'Adam',bicycle:'Velosiped',car:'Maşın',motorcycle:'Motosiklet',airplane:'Təyyarə',bus:'Avtobus',train:'Qatar',truck:'Yük maşını','traffic light':'Svetofor','fire hydrant':'Yanğın kranı','stop sign':'STOP nişanı','parking meter':'Parkomat',bench:'Skamya',bird:'Quş',cat:'Pişik',dog:'İt',horse:'At',sheep:'Qoyun',cow:'İnək',elephant:'Fil',bear:'Ayı',zebra:'Zebra',giraffe:'Zürafə',backpack:'Bel çantası',umbrella:'Çətir',handbag:'Çanta',tie:'Qalstuk',suitcase:'Çemodan',frisbee:'Frisbi',skis:'Xizək',snowboard:'Snoubord','sports ball':'Top',kite:'Uçurtma','baseball bat':'Beysbol çubuğu','baseball glove':'Beysbol əlcəyi',skateboard:'Skeytbord',surfboard:'Sörf taxtası','tennis racket':'Tennis raketi',bottle:'Butulka','wine glass':'Bokal',cup:'Stəkan',fork:'Çəngəl',knife:'Bıçaq',spoon:'Qaşıq',bowl:'Kasa',banana:'Banan',apple:'Alma',sandwich:'Sendviç',orange:'Portağal',broccoli:'Brokoli',carrot:'Kök','hot dog':'Hot-doq',pizza:'Pizza',donut:'Dönət',cake:'Tort',chair:'Stul',couch:'Divan','potted plant':'Bitki',bed:'Çarpayı','dining table':'Masa',toilet:'Tualet',tv:'Televizor',laptop:'Noutbuk',mouse:'Siçan',remote:'Pult',keyboard:'Klaviatura','cell phone':'Telefon',microwave:'Mikrodalğa',oven:'Soba',toaster:'Toster',sink:'Əlüzyuyan',refrigerator:'Soyuducu',book:'Kitab',clock:'Saat',vase:'Vaza',scissors:'Qayçı','teddy bear':'Oyuncaq ayı','hair drier':'Fen',toothbrush:'Diş fırçası'};
+const nameOf=c=>CL[c]?CL[c][0]:(COCOAZ[c]||c);
+const ANIM=new Set(['dog','cat','horse','sheep','cow','bird','bear','elephant','zebra','giraffe']);
+const recent=n=>Date.now()-(seenAt[n]||0)<10000;
+let allOn=true,lastScene=0;const named={};
+$('cm').onclick=()=>{allOn=!allOn;$('cm').textContent=allOn?'🧠 Hər şey':'🛣 Yalnız yol'};
 async function camLoop(){
   const v=$('cv'),cv=$('cc'),g=cv.getContext('2d');let n=0,cres=[],prev={};
   while(camOn){
@@ -512,29 +628,51 @@ async function camLoop(){
       const vw=v.videoWidth,vh=v.videoHeight;if(!vw){await new Promise(r=>setTimeout(r,200));continue}
       const sc=Math.min(cw/vw,ch/vh),ox=(cw-vw*sc)/2,oy=(ch-vh*sc)/2,f=vw/2/Math.tan(rad(65)/2);
       const box=(x,y,w,h,lab,cl)=>{g.lineWidth=4;g.strokeStyle=cl;g.strokeRect(x*sc+ox,y*sc+oy,w*sc,h*sc);g.font='bold 18px sans-serif';g.fillStyle=cl;g.fillText(lab,x*sc+ox+2,Math.max(18,y*sc+oy-6))};
-      if(n++%2===0||!sm)cres=await cmodel.detect(v,12);
-      let near=null,sigTxt='';
+      if(n++%2===0||!sm)cres=await cmodel.detect(v,20);
+      let near=null,sigTxt='';const scene=[];
       for(const o of cres){
-        const c=CL[o.class];if(!c||o.score<.45)continue;
+        const road=!!CL[o.class];
+        if(o.score<(road?.45:.55)||(!road&&!allOn&&!ANIM.has(o.class)))continue;
         if(sm&&o.class==='stop sign')continue;
-        const [x,y,w,h]=o.bbox;let lab=c[0],col='';
+        const [x,y,w,h]=o.bbox;let lab=nameOf(o.class),col='';
         if(o.class==='traffic light'){col=lightColor(v,x,y,w,h);if(col)lab+=' '+col}
-        box(x,y,w,h,lab,c[1]?'#19ff6b':'#ffb020');
-        const cx=x+w/2;
+        box(x,y,w,h,lab,road?(CL[o.class][1]?'#19ff6b':'#ffb020'):ANIM.has(o.class)?'#ff5a5a':'#7ec8ff');
+        const cx=x+w/2,side=cx<vw*.33?'solda':cx>vw*.67?'sağda':'qabaqda';
+        scene.push({c:o.class,nm:lab,side});
         if(RW[o.class]&&cx>vw*.3&&cx<vw*.7&&(!near||w>near.w))near={w,cl:o.class};
         if(o.class==='stop sign')sayOnce('stop','Qarşıda STOP nişanı görünür. Dayanma xəttində tam dayan.',10000);
         else if(o.class==='traffic light')sayOnce('tl','Svetofor görünür'+(col?', '+col:'')+'.',8000);
         else if(o.class==='person'&&cx>vw*.25&&cx<vw*.75)sayOnce('pp','Piyada var, diqqətli ol.',10000);
+        else if(ANIM.has(o.class)&&side==='qabaqda')sayOnce('an'+o.class,'Yolda '+lab.toLowerCase()+' ola bilər, yavaşla.',9000);
+        if(RW[o.class]&&w>vw*.1&&side!=='qabaqda'&&(recent('prio_give_way')||recent('prio_stop')))sayOnce('gw'+side,'Yol ver nişanı var. '+side[0].toUpperCase()+side.slice(1)+' maşın görünür, ona yol ver.',6000);
+      }
+      if(allOn&&scene.length){      /* hər şeyin adını çək: "qabaqda maşın, sağda adam" */
+        const now=Date.now(),g={};
+        scene.forEach(o=>{const k=o.side+'|'+o.c;(g[k]=g[k]||{k,side:o.side,nm:o.nm,n:0}).n++});
+        const fresh=Object.values(g).filter(o=>now-(named[o.k]||0)>12000);
+        const ord={qabaqda:0,solda:1,'sağda':2};fresh.sort((a,b)=>ord[a.side]-ord[b.side]);
+        if(fresh.length&&now-lastScene>3000){
+          const part=fresh.slice(0,3);
+          if(say(part.map(o=>o.side+' '+(o.n>1?o.n+' ':'')+o.nm.toLowerCase()).join(', ')+'.',true)){part.forEach(o=>named[o.k]=now);lastScene=now}
+        }
       }
       if(sm){
-        const ss=await detectSigns(v),now={};
+        const ss=await detectSigns(v),now={};let top=null;
         for(const o of ss){
-          now[o.cl]=1;const nm=signName(o.cl);
+          now[o.cl]=1;const code=SC[o.cl],nm=signName(o.cl);
           box(o.x,o.y,o.w,o.h,nm+' '+Math.round(o.sc*100)+'%','#19ff6b');
-          if(prev[o.cl]){const m=/speed_over_(\d+)/.exec(SC[o.cl]);sayOnce('s'+o.cl,nm+'.'+(m&&curSpd>+m[1]+3?' Yavaşla.':''),12000)}
+          if(!prev[o.cl])continue;               /* ardıcıl 2 kadrda görünməlidir (yalançı tanımanın qarşısı) */
+          seenAt[code]=Date.now();
+          const a=advice(code,curSpd);if(!a)continue;
+          const sc2=LVP[a.lv]*10+o.w*o.h/(vw*vh)*100;
+          if(!top||sc2>top.sc)top={a,sc:sc2};
+          if(a.q!==0)sayOnce('i'+a.k,a.i,a.lv==='bad'&&a.k.startsWith('forb_speed')?6000:14000);
         }
+        if(top)bn={a:top.a,until:Date.now()+5000};
         prev=now;sigTxt=ss.slice(0,2).map(o=>signName(o.cl)).join(', ');
       }
+      showBn();
+      $('cd').textContent='Nişan modeli: '+(sm?'var ('+signSrc+') '+sgDbg.shapes+' '+sgDbg.fmt+(sgDbg.best?' • ən yüksək: '+SC[sgDbg.best.cl]+' '+Math.round(sgDbg.best.sc*100)+'%':''):'YOXDUR '+signErr);
       let msg='Qabaqda maşın görünmür',bad=false;
       if(near){const d=RW[near.cl]*f/near.w,sp=curSpd/3.6;msg='Qabaqdakı '+CL[near.cl][0].toLowerCase()+': təxminən '+Math.round(d)+' m';
         if(curSpd>15&&d/sp<1.5){bad=true;sayOnce('gap','Məsafəni saxla! Qabaqdakı maşına çox yaxınsan.',5000)}
@@ -548,13 +686,13 @@ async function camLoop(){
 async function openCam(){
   $('camv').style.display='block';$('ci').textContent='Kamera və model yüklənir (ilk dəfə internet lazımdır)…';
   try{
-    if(!cmodel){await loadJS('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js');await loadJS('https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js');cmodel=await cocoSsd.load()}
+    if(!cmodel){await loadAny(['vendor/tf.min.js','https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js']);await loadAny(['vendor/coco-ssd.min.js','https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js']);cmodel=await cocoSsd.load()}
     if(!sm){$('ci').textContent='Nişan modeli yüklənir…';if(!await loadSigns())showT('Nişan modeli yüklənmədi. '+signErr)}
     cstream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}},audio:false});
     const v=$('cv');v.srcObject=cstream;await v.play();camOn=true;camLoop();
   }catch(e){$('ci').textContent=e.name==='NotAllowedError'?'Kamera icazəsi yoxdur.':'Xəta: '+e.message}
 }
-function closeCam(){camOn=false;if(cstream)cstream.getTracks().forEach(t=>t.stop());cstream=null;$('camv').style.display='none'}
+function closeCam(){$('cd').textContent='';camOn=false;bn=null;$('cn').style.display='none';if(cstream)cstream.getTracks().forEach(t=>t.stop());cstream=null;$('camv').style.display='none'}
 $('cam').onclick=openCam;$('cx').onclick=closeCam;
 $('go').onclick=()=>begin(false);
 $('demo').onclick=()=>begin(true);
