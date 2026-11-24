@@ -35,7 +35,8 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
 #rt{color:#9fe3b7;min-height:1.2em}
 .hm{font-size:24px;line-height:28px;text-align:center}
 #intro{overflow:auto;justify-content:flex-start;padding-top:calc(28px + env(safe-area-inset-top,0))}
-.sug{background:#232b32;border-radius:12px;max-height:36vh;overflow:auto}
+.sug{background:#232b32;border-radius:12px;max-height:34vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.sug .cnt{padding:6px 14px;font-size:13px;color:var(--dim);position:sticky;top:0;background:#232b32}
 .sug div{padding:10px 14px;border-bottom:1px solid #333d45}
 .sug b{display:block;font-size:16px}.sug small{color:var(--dim)}
 #info{background:#222a31;padding:6px 14px;font-size:15px;color:#cfe3ff;display:none}
@@ -49,6 +50,10 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
 #cn.go{background:rgba(28,143,85,.95)}#cn.warn{background:rgba(224,162,26,.97);color:#1a1200}#cn.bad{background:rgba(201,32,47,.96)}
 #cm{position:absolute;top:calc(10px + env(safe-area-inset-top,0));left:10px}
 #cd{position:absolute;left:8px;right:8px;bottom:calc(84px + env(safe-area-inset-bottom,0));z-index:4;font:12px/1.3 monospace;color:#9fe3b7;background:rgba(0,0,0,.5);padding:3px 8px;border-radius:8px;word-break:break-all}
+#cg{position:absolute;top:calc(10px + env(safe-area-inset-top,0));right:112px}
+#st{position:fixed;inset:0;z-index:3500;background:rgba(0,0,0,.82);display:none;overflow:auto;padding:calc(16px + env(safe-area-inset-top,0)) 14px 24px}
+#st .card{background:#1d242a;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;max-width:480px;margin:0 auto}
+#st h2{margin:0 0 4px;font-size:22px}#stn{color:#9fe3b7;min-height:1.2em;line-height:1.4;margin:0}
 #cx{position:absolute;top:calc(10px + env(safe-area-inset-top,0));right:10px}
 #tch{z-index:3000}
 .b{touch-action:manipulation}
@@ -69,11 +74,21 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
     <div class="sp"></div>
     <button class="b" id="cam">📷</button>
     <button class="b" id="vbtn">🔊</button>
+    <button class="b" id="sg">⚙</button>
     <button class="b" id="fast" style="display:none">⏩</button>
     <button class="b" onclick="location.reload()">Çıx</button>
   </div>
 </div>
-<div id="camv"><video id="cv" playsinline muted></video><canvas id="cc"></canvas><div id="cn"></div><div id="cd"></div><div id="ci"></div><button class="b" id="cm">🧠 Hər şey</button><button class="b" id="cx">✕ Bağla</button></div>
+<div id="camv"><video id="cv" playsinline muted></video><canvas id="cc"></canvas><div id="cn"></div><div id="cd"></div><div id="ci"></div><button class="b" id="cm">🧠 Hər şey</button><button class="b" id="cg">⚙</button><button class="b" id="cx">✕ Bağla</button></div>
+<div id="st"><div class="card"><h2>⚙ Ayarlar</h2>
+  <button class="b" id="s_beep"></button>
+  <button class="b" id="s_voice"></button>
+  <button class="b" id="s_all"></button>
+  <button class="b" id="s_acc"></button>
+  <button class="b" id="s_test">🔊 İnsan səsini yoxla</button>
+  <button class="b" id="s_inst">📥 Səs datası quraşdır (Android)</button>
+  <p id="stn"></p>
+  <button class="b" id="s_close">Bağla</button></div></div>
 <div id="tch"></div>
 <div id="intro">
   <h1>AC Nav</h1>
@@ -84,9 +99,10 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
   <button class="b" id="demo">Simulyasiya (maşın sürmədən)</button>
   <button class="b" id="gm">🗺 Google Maps-da aç</button>
   <button class="b" id="vtest">🔊 Səsi yoxla</button>
+  <button class="b" id="sg2">⚙ Ayarlar (siqnal səsi, insan səsi, kamera)</button>
   <p id="rt"></p><p id="vnote" style="color:#e0a21a"></p>
   <p>Səsli müəllim: yolda gördüklərini Azərbaycan dilində deyir. STOP, yol ver, piyada keçidi, svetofor, dairəvi hərəkət və sürət limiti xəritə məlumatına görə xəbərdarlıq edilir.</p>
-  <p>Nişanlar, zolaqlar və qadağalar xəritə (OSM) məlumatına görədir. 📷 Kamera telefonun içində işləyir (açar lazım deyil): 63 yol nişanını, svetoforu, piyadanı və maşınları tanıyır (zəif işıqda və uzaqda səhv edə bilər). Nişan modeli: StreetSignSense (A. Ferrante, MIT). Bu proqram köməkçidir, sürücünün məsuliyyətini əvəz etmir.</p>
+  <p>Nişanlar, zolaqlar və qadağalar xəritə (OSM) məlumatına görədir. 📷 Kamera telefonun içində işləyir (açar lazım deyil): 63 yol nişanını, svetoforu, piyadanı və maşınları tanıyır (zəif işıqda və uzaqda səhv edə bilər). Nişan modeli: StreetSignSense (A. Ferrante, MIT). Obyekt modeli: COCO-SSD (TensorFlow.js). Xəritə: OpenStreetMap. Bu proqram köməkçidir, sürücünün məsuliyyətini əvəz etmir.</p>
 </div>
 
 <script src="vendor/leaflet/leaflet.js"></script>
@@ -121,12 +137,20 @@ Object.assign(T.cam,{e:'Sürət limitini keçmə.'});
 Object.assign(T.bump,{e:'Sürəti xeyli azalt, yavaş keç.'});
 Object.assign(T.rail,{e:'Şlaqbaum bağlıdırsa və ya qırmızı işıq yanırsa keçmə. Qatar olmadığına əmin ol.'});
 let map,me,hl,hz={},ann={},heading=null,last=null,lim=null,voiceOn=true,voice=null,watchId=null,timer=null,lastFetch=null,lastRound=0,lastSp=0,rw={},lastPos=null,lastW=null,curSpd=0;
+/* Ayarlar (telefonda yadda qalır) */
+const ST=Object.assign({beep:true,voice:true,all:true,acc:'fast'},(()=>{try{return JSON.parse(localStorage.getItem('acnav-st')||'{}')}catch(e){return{}}})());
+function saveST(){try{localStorage.setItem('acnav-st',JSON.stringify(ST))}catch(e){}}
+voiceOn=ST.voice!==false;
+function voiceNote(x){$('vnote').textContent=x;$('stn').textContent=x}
+
 
 /* Səs: əvvəl telefonun öz TTS-i (Android), sonra brauzer səsi. Azərbaycan yoxdursa türk */
 let TTS=null;try{if(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())TTS=Capacitor.registerPlugin('TextToSpeech')}catch(e){TTS=null}
 let ttsLang='az-AZ';
 const trFix=t=>t.replace(/ə/g,'e').replace(/Ə/g,'E').replace(/x/g,'h').replace(/X/g,'H').replace(/q/g,'k').replace(/Q/g,'K');
-function beep(){try{const A=window.AudioContext||window.webkitAudioContext,c=new A(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);g.gain.value=.3;o.frequency.value=880;o.start();setTimeout(()=>{o.stop();c.close()},350)}catch(e){}}
+function tone(fs){try{const A=window.AudioContext||window.webkitAudioContext,c=new A();fs.forEach((f,i)=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);g.gain.value=.3;o.frequency.value=f;o.start(c.currentTime+i*.17);o.stop(c.currentTime+i*.17+.13)});setTimeout(()=>c.close(),900)}catch(e){}}
+function beep(){if(ST.beep)tone([880])}
+let lastAl=0;function alarm(){if(!ST.beep||Date.now()-lastAl<4000)return;lastAl=Date.now();tone([880,660,880])}
 async function initTTS(){
   if(!TTS){$('vnote').textContent='Səs: brauzer rejimi.';return}
   try{
@@ -134,6 +158,13 @@ async function initTTS(){
     ttsLang=L.find(x=>/^tr/i.test(x))||L.find(x=>/^az/i.test(x))||L.find(x=>/^en/i.test(x))||L[0]||'tr-TR';
     $('vnote').textContent=L.length?('Səs mühərriki var, '+L.length+' dil. Seçilən: '+ttsLang+(/^tr/i.test(ttsLang)?' (türk)':' (türk səsi yoxdur!)')):'Telefonda səs mühərriki yoxdur. Play Store-dan "Speech Services by Google" quraşdır.';
   }catch(e){$('vnote').textContent='Səs mühərriki xətası: '+(e&&e.message||e)}
+}
+async function nativeSay(t){
+  const langs=[ttsLang,'tr-TR','en-US'].filter((x,i,a)=>x&&a.indexOf(x)===i);let err;
+  for(const L of langs){
+    try{await TTS.speak({text:/^tr/i.test(L)?trFix(t):t,lang:L,rate:.95,pitch:1,volume:1,queueStrategy:0});ttsLang=L;return true}catch(e){err=e}
+  }
+  throw err;
 }
 function pickVoice(){if(TTS||!('speechSynthesis' in window))return;const V=speechSynthesis.getVoices();voice=V.find(x=>/^az/i.test(x.lang))||V.find(x=>/^tr/i.test(x.lang))||null}
 if('speechSynthesis' in window){speechSynthesis.onvoiceschanged=pickVoice;pickVoice()}
@@ -152,14 +183,32 @@ function say(t,low){
   spkUntil=Date.now()+Math.min(9000,1200+t.length*85);
   try{
     if(TTS){
-      const tr=/^tr/i.test(ttsLang);
-      TTS.stop().catch(()=>{}).then(()=>TTS.speak({text:tr?trFix(t):t,lang:ttsLang,rate:.95,pitch:1,volume:1})).catch(e=>{showT('Telefon səsi xətası: '+(e&&e.message||e)+' → brauzer səsi');if(!webSay(t))beep()});
+      TTS.stop().catch(()=>{}).then(()=>nativeSay(t)).catch(e=>{showT('Telefon səsi xətası: '+(e&&e.message||e)+' → brauzer səsi');if(!webSay(t))beep()});
       return true}
     if(!webSay(t))beep();
   }catch(e){beep();showT('Səs xətası: '+e.message)}
   return true;
 }
-$('vbtn').onclick=()=>{voiceOn=!voiceOn;$('vbtn').textContent=voiceOn?'🔊':'🔇';if(voiceOn)say('Salam, mən AC Nav. Səsim eşidilirmi?')};
+function refreshST(){
+  const on=x=>x?'AÇIQ ✅':'BAĞLI ⛔';
+  $('s_beep').textContent='🔔 Siqnal səsi: '+on(ST.beep);
+  $('s_voice').textContent='🗣 İnsan səsi: '+on(ST.voice);
+  $('s_all').textContent='🧠 Kamera hər şeyin adını desin: '+on(ST.all);
+  $('s_acc').textContent='🎯 Kamera dəqiqliyi: '+(ST.acc==='acc'?'DƏQİQ (yavaş)':'SÜRƏTLİ');
+  $('vbtn').textContent=ST.voice?'🔊':'🔇';
+  $('cm').textContent=ST.all?'🧠 Hər şey':'🛣 Yalnız yol';
+}
+function openST(){$('st').style.display='block';refreshST()}
+$('sg').onclick=$('sg2').onclick=$('cg').onclick=openST;
+$('s_close').onclick=()=>$('st').style.display='none';
+$('s_beep').onclick=()=>{ST.beep=!ST.beep;saveST();refreshST();if(ST.beep)tone([880,660,880])};
+$('s_voice').onclick=()=>{ST.voice=!ST.voice;voiceOn=ST.voice;saveST();refreshST();if(ST.voice)say('İnsan səsi açıqdır.')};
+$('s_all').onclick=()=>{ST.all=!ST.all;allOn=ST.all;saveST();refreshST()};
+$('s_acc').onclick=()=>{ST.acc=ST.acc==='acc'?'fast':'acc';saveST();refreshST();cmodel=null;voiceNote('Kameranı bağlayıb yenidən aç, yeni model yüklənəcək.')};
+$('s_inst').onclick=async()=>{try{if(TTS&&TTS.openInstall){await TTS.openInstall();voiceNote('Açılan pəncərədə Türk dili səs datasını yüklə.')}else voiceNote('Bu funksiya yalnız APK-da var. Telefon Ayarlar → Səs → Mətndən nitqə.')}catch(e){voiceNote('Açılmadı: '+(e&&e.message||e)+'. Telefon Ayarlar → Səs → Mətndən nitqə bölməsinə get.')}};
+$('vbtn').onclick=()=>{ST.voice=!ST.voice;voiceOn=ST.voice;saveST();refreshST();if(voiceOn)say('Salam, mən AC Nav. Səsim eşidilirmi?')};
+$('s_test').onclick=()=>testVoice();
+refreshST();
 
 /* Xəritə */
 function initMap(lat,lon){
@@ -172,7 +221,7 @@ function addHz(id,h){
   if(hz[id])return;hz[id]=h;
   L.marker([h.lat,h.lon],{icon:L.divIcon({className:'hm',html:T[h.k].m,iconSize:[28,28]}),interactive:false}).addTo(hl);
 }
-function setS(c,g,o,t,s){$('status').className=c;$('glyph').className=o?'oct':'';$('glyph').textContent=g;$('t').textContent=t;$('s').textContent=s}
+function setS(c,g,o,t,s){if(c==='bad'&&g!=='!')alarm();$('status').className=c;$('glyph').className=o?'oct':'';$('glyph').textContent=g;$('t').textContent=t;$('s').textContent=s}
 
 /* Yol, zolaq məlumatı (OSM) */
 function dseg(lat,lon,a,b){const k=Math.cos(rad(lat)),x=(lon-a[1])*k,y=lat-a[0],dx=(b[1]-a[1])*k,dy=b[0]-a[0],l=dx*dx+dy*dy;const t=l?Math.max(0,Math.min(1,(x*dx+y*dy)/l)):0;return Math.hypot(x-t*dx,y-t*dy)*111320}
@@ -304,46 +353,58 @@ async function geo(q,key){
 const nz=s=>(s||'').toLowerCase().replace(/ə/g,'e').replace(/ş/g,'s').replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ü/g,'u');
 const CH={a:'aA',e:'eEəƏ',i:'iIıİ',o:'oOöÖ',u:'uUüÜ',s:'sSşŞ',c:'cCçÇ',g:'gGğĞ'};
 const rxw=w=>[...nz(w)].map(c=>CH[c]?'['+CH[c]+']':/[a-z0-9]/.test(c)?'['+c+c.toUpperCase()+']':'').join('');
-async function search(q){
+async function search(q,cb){
   const C=lastPos||[40.4093,49.8671],ws=q.split(/\s+/).filter(Boolean),rest=ws.slice(1);
-  let u='https://nominatim.openstreetmap.org/search?format=json&limit=15&addressdetails=1&countrycodes=az&accept-language=az&q='+encodeURIComponent(q);
-  if(lastPos)u+='&viewbox='+[lastPos[1]-.4,lastPos[0]+.3,lastPos[1]+.4,lastPos[0]-.3].join(',');
-  const oq='[out:json][timeout:20];nwr(around:30000,'+C+')["name"~"'+rxw(ws[0])+'"]->.a;node(around:30000,'+C+')[place~"^(suburb|neighbourhood|quarter|village|town|city)$"]->.p;.a out center tags 120;.p out tags;';
-  const [nj,oj]=await Promise.all([
-    fetch(u).then(r=>r.json()).catch(()=>[]),
-    fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(oq)}).then(r=>r.json()).catch(()=>({elements:[]}))]);
-  const pl=oj.elements.filter(e=>e.tags&&e.tags.place&&e.tags.name&&e.lat!=null);
-  let all=[];
-  for(const e of oj.elements){
-    const t=e.tags||{};if(!t.name||t.place)continue;
-    const lat=e.lat!=null?e.lat:e.center&&e.center.lat,lon=e.lon!=null?e.lon:e.center&&e.center.lon;if(lat==null)continue;
-    let bp=null,bd=8000;for(const x of pl){const d=dist(lat,lon,x.lat,x.lon);if(d<bd){bd=d;bp=x.tags.name}}
-    all.push({n:t.name+(bp?' — '+bp:''),st:t['addr:street']||'',lat,lon});
-  }
-  for(const x of nj){const a=x.address||{},pp=a.suburb||a.neighbourhood||a.city_district||a.quarter||a.village||a.city||a.town||'';
-    all.push({n:(x.name||x.display_name.split(',')[0])+(pp?' — '+pp:''),st:a.road||'',lat:+x.lat,lon:+x.lon,tx:x.display_name})}
-  const seen={};all=all.filter(x=>{const k=nz(x.n)+x.lat.toFixed(3)+x.lon.toFixed(3);if(seen[k])return false;seen[k]=1;return true});
-  const hit=x=>rest.every(w=>nz(x.n+' '+x.st+' '+(x.tx||'')).includes(nz(w)));
-  let o=all.filter(hit);if(!o.length)o=all;
-  o.forEach(x=>{x.km=lastPos?dist(lastPos[0],lastPos[1],x.lat,x.lon)/1000:null;x.a=(x.st||'')+(x.km!=null?(x.st?' • ':'')+x.km.toFixed(1)+' km':'')});
-  if(lastPos)o.sort((p,q)=>p.km-q.km);
-  return o.slice(0,20);
+  let u='https://nominatim.openstreetmap.org/search?format=json&limit=40&addressdetails=1&countrycodes=az&accept-language=az&q='+encodeURIComponent(q);
+  if(lastPos)u+='&viewbox='+[lastPos[1]-.6,lastPos[0]+.5,lastPos[1]+.6,lastPos[0]-.5].join(',');
+  const re=rxw(ws[0]);
+  const oq='[out:json][timeout:40];(nwr(around:60000,'+C+')["name"~"'+re+'"];nwr(around:60000,'+C+')["brand"~"'+re+'"];)->.a;node(around:60000,'+C+')[place~"^(suburb|neighbourhood|quarter|village|town|city)$"]->.p;.a out center tags;.p out tags;';
+  let nj=[],oj={elements:[]};
+  const build=()=>{
+    const pl=oj.elements.filter(e=>e.tags&&e.tags.place&&e.tags.name&&e.lat!=null);
+    let all=[];
+    for(const e of oj.elements){
+      const t=e.tags||{};if((!t.name&&!t.brand)||t.place)continue;
+      const lat=e.lat!=null?e.lat:e.center&&e.center.lat,lon=e.lon!=null?e.lon:e.center&&e.center.lon;if(lat==null)continue;
+      let bp=null,bd=8000;for(const x of pl){const d=dist(lat,lon,x.lat,x.lon);if(d<bd){bd=d;bp=x.tags.name}}
+      all.push({n:(t.name||t.brand)+(bp?' — '+bp:''),st:t['addr:street']||'',lat,lon,ex:[t.brand,t.operator,t.shop,t.amenity,t.cuisine,t.tourism,t.office,t.leisure].filter(Boolean).join(' ')});
+    }
+    for(const x of nj){const a=x.address||{},pp=a.suburb||a.neighbourhood||a.city_district||a.quarter||a.village||a.city||a.town||'';
+      all.push({n:(x.name||x.display_name.split(',')[0])+(pp?' — '+pp:''),st:a.road||'',lat:+x.lat,lon:+x.lon,tx:x.display_name,ex:(x.type||'')+' '+(x.class||'')})}
+    const seen={};all=all.filter(x=>{const k=nz(x.n)+x.lat.toFixed(4)+x.lon.toFixed(4);if(seen[k])return false;seen[k]=1;return true});
+    const hit=x=>rest.every(w=>nz(x.n+' '+x.st+' '+(x.tx||'')+' '+(x.ex||'')).includes(nz(w)));
+    let o=all.filter(hit);if(!o.length)o=all;
+    o.forEach(x=>{x.km=lastPos?dist(lastPos[0],lastPos[1],x.lat,x.lon)/1000:null;x.a=(x.st||'')+(x.km!=null?(x.st?' • ':'')+x.km.toFixed(1)+' km':'')});
+    if(lastPos)o.sort((p,q)=>p.km-q.km);
+    return o;
+  };
+  /* nəticələr gələn kimi göstərilir: Nominatim sürətlidir, Overpass sonra tamamlayır */
+  const pN=fetch(u).then(r=>r.json()).catch(()=>[]).then(x=>{nj=x;cb(build(),false)});
+  const pO=fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(oq)}).then(r=>r.json()).catch(()=>({elements:[]})).then(x=>{oj=x;cb(build(),true)});
+  await Promise.all([pN,pO]);
 }
 function setupAC(id){
-  const inp=$(id),box=document.createElement('div');box.className='sug';inp.after(box);
+  const inp=$(id),box=document.createElement('div');box.className='sug';box.style.display='none';inp.after(box);
   let tm,seq=0;
+  const render=(n,r,done)=>{
+    if(n!==seq)return;
+    box.innerHTML='';box.style.display=r.length?'block':'none';
+    if(!r.length)return;
+    const c=document.createElement('div');c.className='cnt';c.textContent=r.length+' nəticə'+(done?'':' • axtarış davam edir…');box.appendChild(c);
+    const fr=document.createDocumentFragment();
+    r.forEach(x=>{const d=document.createElement('div'),b=document.createElement('b'),sm=document.createElement('small');
+      b.textContent=x.n;sm.textContent=x.a;d.append(b,sm);
+      d.addEventListener('pointerdown',e=>e.preventDefault());           /* yazarkən klaviatura bağlanmasın */
+      d.onclick=()=>{inp.value=x.n;sel[id]=[x.lat,x.lon];box.innerHTML='';box.style.display='none'};
+      fr.appendChild(d)});
+    box.appendChild(fr);
+  };
   inp.addEventListener('input',()=>{
     sel[id]=null;clearTimeout(tm);const q=inp.value.trim();
-    if(q.length<3){box.innerHTML='';return}
-    tm=setTimeout(async()=>{
-      const n=++seq;
-      try{const r=await search(q);if(n!==seq)return;box.innerHTML='';
-        r.forEach(x=>{const d=document.createElement('div'),b=document.createElement('b'),sm=document.createElement('small');
-          b.textContent=x.n;sm.textContent=x.a;d.append(b,sm);
-          d.onclick=()=>{inp.value=x.n;sel[id]=[x.lat,x.lon];box.innerHTML=''};
-          box.appendChild(d)})}catch(e){}
-    },600);
+    if(q.length<2){seq++;box.innerHTML='';box.style.display='none';return}
+    tm=setTimeout(()=>{const n=++seq;search(q,(r,done)=>render(n,r,done)).catch(()=>{})},350);
   });
+  inp.addEventListener('focus',()=>setTimeout(()=>{try{inp.scrollIntoView({block:'start',behavior:'smooth'})}catch(e){}},300));
 }
 try{setupAC('from');setupAC('to')}catch(e){}
 try{if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{lastPos=[p.coords.latitude,p.coords.longitude]},()=>{},{timeout:8000,maximumAge:120000})}catch(e){}
@@ -440,14 +501,17 @@ async function begin(sim){
   }catch(e){$('rt').textContent=e.name==='TypeError'?'İnternetə qoşulmaq olmadı.':e.message}
 }
 /* 📷 Kamera (telefonun içində, açarsız): TensorFlow.js + COCO-SSD */
-$('vtest').onclick=async()=>{
+async function testVoice(){
   beep();
+  const T='Salam, mən AC Nav. Səsim eşidilirmi?';
+  if(!ST.voice){voiceNote('İnsan səsi ayarlarda BAĞLIdır. ⚙ Ayarlar-dan aç.');return}
   if(TTS){
     await initTTS();
-    try{await TTS.speak({text:trFix('Salam, mən AC Nav. Səsim eşidilirmi?'),lang:ttsLang,rate:.95,pitch:1,volume:1});$('vnote').textContent+=' | Nitq göndərildi.'}
-    catch(e){$('vnote').textContent+=' | Nitq xətası: '+(e&&e.message||e)}
-  }else say('Salam, mən AC Nav. Səsim eşidilirmi?');
-};
+    try{await nativeSay(T);voiceNote('Telefon nitqi göndərildi ('+ttsLang+'). Eşitmirsənsə: "📥 Səs datası quraşdır" düyməsinə bas və ya telefonda Google "Speech Services" olsun.')}
+    catch(e){voiceNote('Nitq xətası: '+(e&&e.message||e))}
+  }else{say(T);voiceNote('Brauzer səsi: '+(voice?voice.lang:'uyğun səs tapılmadı, siqnal çalındı'))}
+}
+$('vtest').onclick=testVoice;
 $('tch').onclick=()=>$('tch').style.display='none';
 $('gm').onclick=async()=>{try{const to=$('to').value.trim();if(!to){$('rt').textContent='Əvvəl "Hara" yaz.';return}const b=await geo(to,'to');window.open('https://www.google.com/maps/dir/?api=1&destination='+b[0]+','+b[1]+'&travelmode=driving','_blank')}catch(e){$('rt').textContent=e.message}};
 function loadAny(l){return l.reduce((p,u)=>p.catch(()=>loadJS(u)),Promise.reject())}
@@ -455,12 +519,25 @@ function loadJS(u){return new Promise((ok,no)=>{const e=document.createElement('
 let cmodel=null,camOn=false,cstream=null;const lastSay={};
 const CL={'stop sign':['STOP nişanı',1],'traffic light':['Svetofor',1],'person':['Piyada',0],'car':['Maşın',0],'truck':['Yük maşını',0],'bus':['Avtobus',0],'motorcycle':['Motosiklet',0],'bicycle':['Velosiped',0]};
 const RW={car:1.8,truck:2.5,bus:2.5,motorcycle:.8};
-function sayOnce(k,t,ms){const n=Date.now();if(n-(lastSay[k]||0)>ms){lastSay[k]=n;say(t)}}
+function sayOnce(k,t,ms,al){const n=Date.now();if(n-(lastSay[k]||0)>ms){lastSay[k]=n;if(al)alarm();say(t)}}
 function lightColor(v,x,y,w,h){
-  const c=document.createElement('canvas');c.width=12;c.height=24;const g=c.getContext('2d');g.drawImage(v,x,y,w,h,0,0,12,24);
-  const d=g.getImageData(0,0,12,24).data;let R=0,G=0,Y=0;
-  for(let i=0;i<d.length;i+=4){const r=d[i],gg=d[i+1],b=d[i+2];if(r>180&&gg<130)R++;else if(gg>160&&r<150)G++;else if(r>180&&gg>150&&b<120)Y++}
-  const m=Math.max(R,G,Y);return m<3?'':m===R?'qırmızı':m===G?'yaşıl':'sarı';
+  x=Math.max(0,x);y=Math.max(0,y);
+  const W=14,H=Math.max(14,Math.min(40,Math.round(14*h/Math.max(w,1))));
+  const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');g.drawImage(v,x,y,Math.max(1,w),Math.max(1,h),0,0,W,H);
+  const d=g.getImageData(0,0,W,H).data,sc={r:0,y:0,g:0};
+  for(let i=0;i<d.length;i+=4){
+    const r=d[i],gg=d[i+1],b=d[i+2],mx=Math.max(r,gg,b),mn=Math.min(r,gg,b),V=mx/255,S=mx?(mx-mn)/mx:0;
+    if(V<.55||S<.45)continue;
+    let hu=0;const df=mx-mn;
+    if(mx===r)hu=60*(((gg-b)/df)%6);else if(mx===gg)hu=60*((b-r)/df+2);else hu=60*((r-gg)/df+4);
+    if(hu<0)hu+=360;
+    const col=(hu<18||hu>340)?'r':(hu>=35&&hu<=70)?'y':(hu>=85&&hu<=180)?'g':null;if(!col)continue;
+    const p=(i/4),py=Math.floor(p/W)/H,px=(p%W)/W;let k=1;
+    if(h>=w*1.2)k=col==='r'?(py<.45?1.6:.6):col==='g'?(py>.55?1.6:.6):1;       /* şaquli svetofor: qırmızı yuxarıda, yaşıl aşağıda */
+    else if(w>=h*1.2)k=col==='r'?(px<.45?1.6:.6):col==='g'?(px>.55?1.6:.6):1;  /* üfüqi svetofor */
+    sc[col]+=k*(V+S)/2;
+  }
+  const m=Math.max(sc.r,sc.y,sc.g);return m<1.2?'':m===sc.r?'qırmızı':m===sc.g?'yaşıl':'sarı';
 }
 /* Yol nişanı modeli: StreetSignSense (A. Ferrante, MIT), YOLO12n, 63 nişan */
 const SC=["prio_give_way", "prio_stop", "prio_priority_road", "forb_speed_over_5", "forb_speed_over_10", "forb_speed_over_20", "forb_speed_over_30", "forb_speed_over_40", "forb_speed_over_50", "forb_speed_over_60", "forb_speed_over_70", "forb_speed_over_80", "forb_speed_over_90", "forb_speed_over_100", "forb_speed_over_110", "forb_speed_over_120", "forb_speed_over_130", "forb_no_entry", "forb_no_parking", "forb_no_stopping", "forb_overtake_car", "forb_overtake_trucks", "forb_trucks", "forb_turn_left", "forb_turn_right", "forb_weight_over_3.5t", "forb_weight_over_7.5t", "forb_u_turn", "info_bus_station", "info_crosswalk", "info_highway", "info_one_way", "info_parking", "info_taxi_parking", "warn_children", "warn_construction", "warn_crosswalk", "warn_cyclists", "warn_left_curve", "warn_right_curve", "warn_domestic_animals", "warn_other_dangers", "warn_poor_road_surface", "warn_roundabout", "warn_sharp_left_curve", "warn_sharp_right_curve", "warn_slippery_road", "warn_hump", "warn_traffic_light", "warn_tram", "warn_two_way_traffic", "warn_wild_animals", "mand_bike_lane", "mand_go_left", "mand_go_left_right", "mand_go_right", "mand_go_straight", "mand_go_straight_left", "mand_go_straight_right", "mand_pass_left", "mand_pass_left_right", "mand_pass_right", "mand_roundabout"];
@@ -525,7 +602,7 @@ const seenAt={};
 function advice(code,spd){
   const now=Date.now(),rec=n=>now-(seenAt[n]||0)<10000;
   const m=/^forb_speed_over_(\d+)$/.exec(code);
-  if(m){const n=+m[1];return{k:code,lv:spd>n+3?'bad':'warn',t:'LİMİT '+n,i:'Sürət limiti '+n+'. '+(spd>n+3?'Sən çox sürürsən, yavaşla!':'Sürətini bu həddə saxla.')}}
+  if(m){const n=+m[1],over=spd>n+3;return{k:code,lv:over?'bad':'info',t:'LİMİT '+n,i:'Sürət limiti '+n+'.'+(over?' Sən çox sürürsən, yavaşla!':''),q:(over||spd>=5)?1:0}}
   const rb=code==='mand_roundabout'||code==='warn_roundabout';
   if((rb&&rec('prio_give_way'))||(code==='prio_give_way'&&(rec('mand_roundabout')||rec('warn_roundabout'))))
     return{k:'rbgw',lv:'warn',t:'DAİRƏ: YOL VER',i:'Dairəvi hərəkət, yol ver nişanı var. Dairədə gedənlərə yol ver, dairə azad olanda gir. Çıxarkən sağ siqnal ver.'};
@@ -537,7 +614,7 @@ function advice(code,spd){
 let signSrc='',sm=null,smS=640,smNCHW=false;
 let signErr='';
 async function loadSigns(){
-  const urls=['indexeddb://acnav-signs','models/signs/model.json','https://streetsignsense.alessandroferrante.net/demo/assets/models/yolov12n_web_model/model.json','https://alessandroferrante.github.io/StreetSignSense/demo/assets/models/yolov12n_web_model/model.json','https://cdn.jsdelivr.net/gh/AlessandroFerrante/StreetSignSense@main/demo/assets/models/yolov12n_web_model/model.json','https://raw.githubusercontent.com/AlessandroFerrante/StreetSignSense/main/demo/assets/models/yolov12n_web_model/model.json'];
+  const urls=['models/signs/model.json','indexeddb://acnav-signs','https://streetsignsense.alessandroferrante.net/demo/assets/models/yolov12n_web_model/model.json','https://alessandroferrante.github.io/StreetSignSense/demo/assets/models/yolov12n_web_model/model.json','https://cdn.jsdelivr.net/gh/AlessandroFerrante/StreetSignSense@main/demo/assets/models/yolov12n_web_model/model.json','https://raw.githubusercontent.com/AlessandroFerrante/StreetSignSense/main/demo/assets/models/yolov12n_web_model/model.json'];
   const errs=[];
   for(const u of urls){
     try{
@@ -596,15 +673,20 @@ function decodeSigns(outs,S,s,px,py,thr){
   for(const a of c){if(keep.every(b=>iou(a,b)<.45))keep.push(a);if(keep.length>=8)break}
   return keep;
 }
-async function detectSigns(v){
-  const S=smS,vw=v.videoWidth,vh=v.videoHeight,s=Math.min(S/vw,S/vh),nw=Math.round(vw*s),nh=Math.round(vh*s),px=Math.floor((S-nw)/2),py=Math.floor((S-nh)/2);
-  const inp=tf.tidy(()=>{let x=tf.image.resizeBilinear(tf.browser.fromPixels(v),[nh,nw]).pad([[py,S-nh-py],[px,S-nw-px],[0,0]],114).div(255);if(smNCHW)x=x.transpose([2,0,1]);return x.expandDims(0)});
+/* tile: 0 = bütün kadr, 1 = sol 60%, 2 = sağ 60% (kənardakı kiçik nişanlar böyüyüb tanınsın) */
+async function detectSigns(v,tile){
+  const S=smS,vw=v.videoWidth,vh=v.videoHeight;
+  const R=tile===1?{x:0,y:0,w:Math.round(vw*.6),h:vh}:tile===2?{x:Math.round(vw*.4),y:0,w:vw-Math.round(vw*.4),h:vh}:{x:0,y:0,w:vw,h:vh};
+  const s=Math.min(S/R.w,S/R.h),nw=Math.round(R.w*s),nh=Math.round(R.h*s),px=Math.floor((S-nw)/2),py=Math.floor((S-nh)/2);
+  const inp=tf.tidy(()=>{let x=tf.browser.fromPixels(v);if(R.w!==vw)x=x.slice([R.y,R.x,0],[R.h,R.w,3]);x=tf.image.resizeBilinear(x,[nh,nw]).pad([[py,S-nh-py],[px,S-nw-px],[0,0]],114).div(255);if(smNCHW)x=x.transpose([2,0,1]);return x.expandDims(0)});
   let out;
   try{out=await sm.executeAsync(inp)}finally{inp.dispose()}   /* NonMaxSuppression asinxrondur */
   const arr=Array.isArray(out)?out:[out];
   try{
     const outs=[];for(const t of arr)outs.push({sh:t.shape,d:await t.data()});
-    return decodeSigns(outs,S,s,px,py,.4);
+    const r=decodeSigns(outs,S,s,px,py,.4);
+    r.forEach(o=>{o.x+=R.x;o.y+=R.y});
+    return r;
   }finally{arr.forEach(t=>{if(t&&typeof t.dispose==='function')t.dispose()})}
 }
 let bn=null;
@@ -617,76 +699,123 @@ const COCOAZ={person:'Adam',bicycle:'Velosiped',car:'Maşın',motorcycle:'Motosi
 const nameOf=c=>CL[c]?CL[c][0]:(COCOAZ[c]||c);
 const ANIM=new Set(['dog','cat','horse','sheep','cow','bird','bear','elephant','zebra','giraffe']);
 const recent=n=>Date.now()-(seenAt[n]||0)<10000;
-let allOn=true,lastScene=0;const named={};
-$('cm').onclick=()=>{allOn=!allOn;$('cm').textContent=allOn?'🧠 Hər şey':'🛣 Yalnız yol'};
+let allOn=ST.all,lastScene=0;const named={};
+$('cm').onclick=()=>{ST.all=!ST.all;allOn=ST.all;saveST();refreshST()};
+/* Obyekt izləyicisi: eyni obyekt kadrlar arası izlənir, 2+ dəfə görünməyibsə elan edilmir (yalançı tanıma azalır) */
+let tracks=[],tid=0,sgSeen={},tileN=0,cocoSrc='',cmodelAcc='';
+function updateTracks(dets,now){
+  const used=new Set();
+  for(const t of tracks){
+    let bi=-1,bv=.25;
+    dets.forEach((d,i)=>{if(used.has(i)||d.class!==t.c)return;const q=iou({x:t.x,y:t.y,w:t.w,h:t.h},{x:d.bbox[0],y:d.bbox[1],w:d.bbox[2],h:d.bbox[3]});if(q>bv){bv=q;bi=i}});
+    if(bi>=0){used.add(bi);const d=dets[bi],b=d.bbox,a=.6;
+      t.x=t.x*(1-a)+b[0]*a;t.y=t.y*(1-a)+b[1]*a;t.w=t.w*(1-a)+b[2]*a;t.h=t.h*(1-a)+b[3]*a;
+      t.sc=Math.max(d.score,t.sc*.9);t.hits++;t.miss=0}
+    else t.miss++;
+  }
+  dets.forEach((d,i)=>{if(!used.has(i)){const b=d.bbox;tracks.push({id:++tid,c:d.class,x:b[0],y:b[1],w:b[2],h:b[3],sc:d.score,hits:1,miss:0,dh:[],ch:[]})}});
+  tracks=tracks.filter(t=>t.miss<=4);
+}
+const maj=a=>{const c={};let b='',m=0;a.forEach(x=>{if(!x)return;c[x]=(c[x]||0)+1;if(c[x]>m){m=c[x];b=x}});return b};
 async function camLoop(){
-  const v=$('cv'),cv=$('cc'),g=cv.getContext('2d');let n=0,cres=[],prev={};
+  const v=$('cv'),cv=$('cc'),g=cv.getContext('2d');let n=0,fr=0,t0=Date.now(),fps=0;
+  tracks=[];sgSeen={};
   while(camOn){
     try{
       const cw=cv.clientWidth,ch=cv.clientHeight;if(cv.width!==cw||cv.height!==ch){cv.width=cw;cv.height=ch}
       g.clearRect(0,0,cw,ch);
       const vw=v.videoWidth,vh=v.videoHeight;if(!vw){await new Promise(r=>setTimeout(r,200));continue}
-      const sc=Math.min(cw/vw,ch/vh),ox=(cw-vw*sc)/2,oy=(ch-vh*sc)/2,f=vw/2/Math.tan(rad(65)/2);
+      const sc=Math.min(cw/vw,ch/vh),ox=(cw-vw*sc)/2,oy=(ch-vh*sc)/2,f=vw/2/Math.tan(rad(65)/2),now=Date.now();
       const box=(x,y,w,h,lab,cl)=>{g.lineWidth=4;g.strokeStyle=cl;g.strokeRect(x*sc+ox,y*sc+oy,w*sc,h*sc);g.font='bold 18px sans-serif';g.fillStyle=cl;g.fillText(lab,x*sc+ox+2,Math.max(18,y*sc+oy-6))};
-      if(n++%2===0||!sm)cres=await cmodel.detect(v,20);
+      fr++;if(now-t0>=1000){fps=fr;fr=0;t0=now}
+
+      /* 1) Obyektlər (COCO-SSD) + izləmə */
+      if(n%2===0||!sm){const dets=await cmodel.detect(v,20);updateTracks(dets.filter(d=>d.score>=(CL[d.class]?0.45:0.55)),now)}
+      n++;
       let near=null,sigTxt='';const scene=[];
-      for(const o of cres){
-        const road=!!CL[o.class];
-        if(o.score<(road?.45:.55)||(!road&&!allOn&&!ANIM.has(o.class)))continue;
-        if(sm&&o.class==='stop sign')continue;
-        const [x,y,w,h]=o.bbox;let lab=nameOf(o.class),col='';
-        if(o.class==='traffic light'){col=lightColor(v,x,y,w,h);if(col)lab+=' '+col}
-        box(x,y,w,h,lab,road?(CL[o.class][1]?'#19ff6b':'#ffb020'):ANIM.has(o.class)?'#ff5a5a':'#7ec8ff');
-        const cx=x+w/2,side=cx<vw*.33?'solda':cx>vw*.67?'sağda':'qabaqda';
-        scene.push({c:o.class,nm:lab,side});
-        if(RW[o.class]&&cx>vw*.3&&cx<vw*.7&&(!near||w>near.w))near={w,cl:o.class};
-        if(o.class==='stop sign')sayOnce('stop','Qarşıda STOP nişanı görünür. Dayanma xəttində tam dayan.',10000);
-        else if(o.class==='traffic light')sayOnce('tl','Svetofor görünür'+(col?', '+col:'')+'.',8000);
-        else if(o.class==='person'&&cx>vw*.25&&cx<vw*.75)sayOnce('pp','Piyada var, diqqətli ol.',10000);
-        else if(ANIM.has(o.class)&&side==='qabaqda')sayOnce('an'+o.class,'Yolda '+lab.toLowerCase()+' ola bilər, yavaşla.',9000);
-        if(RW[o.class]&&w>vw*.1&&side!=='qabaqda'&&(recent('prio_give_way')||recent('prio_stop')))sayOnce('gw'+side,'Yol ver nişanı var. '+side[0].toUpperCase()+side.slice(1)+' maşın görünür, ona yol ver.',6000);
+      const conf=tracks.filter(t=>t.miss<=2&&(t.hits>=2||t.sc>.8));
+      for(const t of conf){
+        const road=!!CL[t.c];
+        if(!road&&!allOn&&!ANIM.has(t.c))continue;
+        let lab=nameOf(t.c),col='';
+        if(t.c==='traffic light'){t.ch.push(lightColor(v,t.x,t.y,t.w,t.h));t.ch=t.ch.slice(-6);col=maj(t.ch);if(col)lab+=' '+col}
+        box(t.x,t.y,t.w,t.h,lab,road?(CL[t.c][1]?'#19ff6b':'#ffb020'):ANIM.has(t.c)?'#ff5a5a':'#7ec8ff');
+        const cx=t.x+t.w/2,side=cx<vw*.33?'solda':cx>vw*.67?'sağda':'qabaqda';
+        scene.push({c:t.c,nm:lab,side});
+        if(RW[t.c]&&cx>vw*.3&&cx<vw*.7&&(!near||t.w>near.w))near=t;
+        if(t.c==='stop sign')sayOnce('stop',SI.prio_stop.i,10000,true);
+        else if(t.c==='traffic light')sayOnce('tl','Svetofor görünür'+(col?', '+col:'')+'.',8000,col==='qırmızı');
+        else if(t.c==='person'&&cx>vw*.25&&cx<vw*.75)sayOnce('pp','Piyada var, diqqətli ol.',10000,true);
+        else if(ANIM.has(t.c)&&side==='qabaqda')sayOnce('an'+t.c,'Yolda '+nameOf(t.c).toLowerCase()+' ola bilər, yavaşla.',9000,true);
+        if(RW[t.c]&&t.w>vw*.1&&side!=='qabaqda'&&(recent('prio_give_way')||recent('prio_stop')))sayOnce('gw'+side,'Yol ver nişanı var. '+side[0].toUpperCase()+side.slice(1)+' maşın görünür, ona yol ver.',6000,true);
       }
       if(allOn&&scene.length){      /* hər şeyin adını çək: "qabaqda maşın, sağda adam" */
-        const now=Date.now(),g={};
-        scene.forEach(o=>{const k=o.side+'|'+o.c;(g[k]=g[k]||{k,side:o.side,nm:o.nm,n:0}).n++});
-        const fresh=Object.values(g).filter(o=>now-(named[o.k]||0)>12000);
+        const g2={};
+        scene.forEach(o=>{const k=o.side+'|'+o.c;(g2[k]=g2[k]||{k,side:o.side,nm:o.nm,n:0}).n++});
+        const fresh=Object.values(g2).filter(o=>now-(named[o.k]||0)>12000);
         const ord={qabaqda:0,solda:1,'sağda':2};fresh.sort((a,b)=>ord[a.side]-ord[b.side]);
         if(fresh.length&&now-lastScene>3000){
           const part=fresh.slice(0,3);
           if(say(part.map(o=>o.side+' '+(o.n>1?o.n+' ':'')+o.nm.toLowerCase()).join(', ')+'.',true)){part.forEach(o=>named[o.k]=now);lastScene=now}
         }
       }
+
+      /* 2) Yol nişanları (YOLO): hər kadrda fərqli kəsik (bütün/sol/sağ), 2 dəfə görünsə təsdiq */
       if(sm){
-        const ss=await detectSigns(v),now={};let top=null;
+        const ss=await detectSigns(v,tileN++%3),got=new Set();
         for(const o of ss){
-          now[o.cl]=1;const code=SC[o.cl],nm=signName(o.cl);
-          box(o.x,o.y,o.w,o.h,nm+' '+Math.round(o.sc*100)+'%','#19ff6b');
-          if(!prev[o.cl])continue;               /* ardıcıl 2 kadrda görünməlidir (yalançı tanımanın qarşısı) */
-          seenAt[code]=Date.now();
+          if(got.has(o.cl))continue;got.add(o.cl);
+          const h=sgSeen[o.cl]||(sgSeen[o.cl]={n:0,last:0,sc:0});
+          if(now-h.last>2500)h.n=0;
+          h.n++;h.last=now;h.sc=Math.max(o.sc,h.sc*.85);h.box=o;
+        }
+        let top=null;const names=[];
+        for(const k in sgSeen){
+          const h=sgSeen[k];if(now-h.last>1500||!(h.n>=2||h.sc>=.7))continue;
+          const o=h.box,code=SC[k];
+          box(o.x,o.y,o.w,o.h,signName(+k)+' '+Math.round(h.sc*100)+'%','#19ff6b');names.push(signName(+k));
+          seenAt[code]=h.last;
           const a=advice(code,curSpd);if(!a)continue;
           const sc2=LVP[a.lv]*10+o.w*o.h/(vw*vh)*100;
           if(!top||sc2>top.sc)top={a,sc:sc2};
-          if(a.q!==0)sayOnce('i'+a.k,a.i,a.lv==='bad'&&a.k.startsWith('forb_speed')?6000:14000);
+          if(a.q!==0){const sp=a.k.startsWith('forb_speed');sayOnce(a.k==='prio_stop'?'stop':'i'+a.k,a.i,sp?(a.lv==='bad'?6000:30000):14000,a.lv==='bad')}
         }
-        if(top)bn={a:top.a,until:Date.now()+5000};
-        prev=now;sigTxt=ss.slice(0,2).map(o=>signName(o.cl)).join(', ');
+        if(top)bn={a:top.a,until:now+5000};
+        sigTxt=names.slice(0,2).join(', ');
       }
       showBn();
-      $('cd').textContent='Nişan modeli: '+(sm?'var ('+signSrc+') '+sgDbg.shapes+' '+sgDbg.fmt+(sgDbg.best?' • ən yüksək: '+SC[sgDbg.best.cl]+' '+Math.round(sgDbg.best.sc*100)+'%':''):'YOXDUR '+signErr);
+
+      /* 3) Qabaqdakı maşın: məsafə, yaxınlaşma sürəti, toqquşmaya qalan vaxt */
       let msg='Qabaqda maşın görünmür',bad=false;
-      if(near){const d=RW[near.cl]*f/near.w,sp=curSpd/3.6;msg='Qabaqdakı '+CL[near.cl][0].toLowerCase()+': təxminən '+Math.round(d)+' m';
-        if(curSpd>15&&d/sp<1.5){bad=true;sayOnce('gap','Məsafəni saxla! Qabaqdakı maşına çox yaxınsan.',5000)}
-        else if(d<5){bad=true;sayOnce('gap','Qabaqdakı maşına çox yaxınsan!',5000)}}
+      if(near){
+        const d=RW[near.c]*f/near.w;near.dh.push({t:now,d});near.dh=near.dh.filter(e=>now-e.t<2500);
+        let vc=0;const a0=near.dh[0],b0=near.dh[near.dh.length-1],dt=(b0.t-a0.t)/1000;if(dt>=1)vc=(a0.d-b0.d)/dt;   /* m/s, müsbət = yaxınlaşır */
+        const sp=curSpd/3.6,ttc=vc>2.5?d/vc:99;
+        msg='Qabaqdakı '+nameOf(near.c).toLowerCase()+': təxminən '+Math.round(d)+' m'+(vc>1.5?' • yaxınlaşır':vc<-1.5?' • uzaqlaşır':'');
+        if(ttc<2.5&&d<35){bad=true;sayOnce('ttc','Qabaqdakı maşına sürətlə yaxınlaşırsan, əyləc!',4000,true)}
+        else if(curSpd>15&&d/sp<1.5){bad=true;sayOnce('gap','Məsafəni saxla! Qabaqdakı maşına çox yaxınsan.',5000,true)}
+        else if(d<5){bad=true;sayOnce('gap','Qabaqdakı maşına çox yaxınsan!',5000,true)}
+      }
+      $('cd').textContent='fps '+fps+' • obyekt: '+cocoSrc+' • nişan: '+(sm?signSrc+' '+sgDbg.fmt+(sgDbg.best?' '+SC[sgDbg.best.cl]+' '+Math.round(sgDbg.best.sc*100)+'%':''):'YOXDUR '+signErr)+' • '+sgDbg.shapes;
       $('ci').textContent=msg+(sigTxt?' • Nişan: '+sigTxt:'')+' • '+Math.round(curSpd)+' km/saat'+(lim?' • limit '+lim:'');
       $('ci').style.background=bad?'rgba(201,32,47,.9)':'rgba(0,0,0,.65)';
     }catch(e){showT('Kamera: '+e.message);break}
-    await new Promise(r=>setTimeout(r,100));
+    await new Promise(r=>setTimeout(r,20));
   }
 }
+async function loadCoco(){
+  const acc=ST.acc==='acc'?'v2':'lite',base=acc==='v2'?'mobilenet_v2':'lite_mobilenet_v2';
+  for(const u of ['models/coco/'+acc+'/model.json',null]){
+    try{const m=await cocoSsd.load(u?{modelUrl:u}:{base});cocoSrc=u?'APK':'internet';return m}catch(e){}
+  }
+  throw new Error('Obyekt modeli yüklənmədi (internet və ya APK faylı yoxdur)');
+}
 async function openCam(){
-  $('camv').style.display='block';$('ci').textContent='Kamera və model yüklənir (ilk dəfə internet lazımdır)…';
+  $('camv').style.display='block';$('ci').textContent='Kamera və modellər yüklənir…';
   try{
-    if(!cmodel){await loadAny(['vendor/tf.min.js','https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js']);await loadAny(['vendor/coco-ssd.min.js','https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js']);cmodel=await cocoSsd.load()}
+    if(!window.tf)await loadAny(['vendor/tf.min.js','https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js']);
+    if(!window.cocoSsd)await loadAny(['vendor/coco-ssd.min.js','https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js']);
+    if(!cmodel||cmodelAcc!==ST.acc){$('ci').textContent='Obyekt modeli yüklənir…';cmodel=await loadCoco();cmodelAcc=ST.acc}
     if(!sm){$('ci').textContent='Nişan modeli yüklənir…';if(!await loadSigns())showT('Nişan modeli yüklənmədi. '+signErr)}
     cstream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}},audio:false});
     const v=$('cv');v.srcObject=cstream;await v.play();camOn=true;camLoop();
