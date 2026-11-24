@@ -43,6 +43,11 @@ jobs:
           test -s www/vendor/tf.min.js
           test -s www/vendor/coco-ssd.min.js
 
+      - name: Download COCO-SSD models (offline)
+        shell: bash
+        run: |
+          node scripts/get-coco.js
+
       - name: Download YOLO12n model
         shell: bash
         run: |
@@ -74,6 +79,8 @@ jobs:
           npx cap add android
 
           sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><application#' android/app/src/main/AndroidManifest.xml
+
+          sed -i 's#<application#<queries><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries><application#' android/app/src/main/AndroidManifest.xml
 
           npx cap sync android
 
