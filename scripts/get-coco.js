@@ -1,5 +1,4 @@
-/* COCO-SSD model fayllarını (model.json + çəkilər) yükləyib www/models/coco altına qoyur.
-   Uğursuz olsa build dayanmır: tətbiq internetdən yükləməyə keçir. */
+/* COCO-SSD (ehtiyat model) fayllarını www/models/coco altına qoyur. Uğursuz olsa build dayanmır. */
 const fs=require('fs'),path=require('path');
 const BASE=process.env.COCO_BASE||'https://storage.googleapis.com/tfjs-models/savedmodel/';
 const OUT=process.env.COCO_OUT||'www/models/coco';

@@ -1,0 +1,882 @@
+[
+{
+"key": "Yol ver. Əsas yolda gedənlərə, sağdan və soldan gələnlərə yol ver. Yol azad olandan sonra get.",
+"text": "Yol ver. Əsas yolda gedənlərə, sağdan və soldan gələnlərə yol ver. Yol azad olandan sonra get."
+},
+{
+"key": "Stop. Dayanma xəttində tam dayan, hər iki tərəfə bax, əsas yoldakılara yol ver.",
+"text": "Stop. Dayanma xəttində tam dayan, hər iki tərəfə bax, əsas yoldakılara yol ver."
+},
+{
+"key": "Sən əsas yoldasan. Kəsişmələrdə üstünlüyün var, amma yan yoldan gələnlərə diqqətli ol.",
+"text": "Sən əsas yoldasan. Kəsişmələrdə üstünlüyün var, amma yan yoldan gələnlərə diqqətli ol."
+},
+{
+"key": "Giriş qadağandır. Bu yola girmə.",
+"text": "Giriş qadağandır. Bu yola girmə."
+},
+{
+"key": "Park etmək qadağandır.",
+"text": "Park etmək qadağandır."
+},
+{
+"key": "Dayanmaq qadağandır. Burada dayanma.",
+"text": "Dayanmaq qadağandır. Burada dayanma."
+},
+{
+"key": "Sollamaq qadağandır. Qabaqdakı maşını ötmə.",
+"text": "Sollamaq qadağandır. Qabaqdakı maşını ötmə."
+},
+{
+"key": "Yük maşınlarını sollamaq qadağandır.",
+"text": "Yük maşınlarını sollamaq qadağandır."
+},
+{
+"key": "Yük maşınlarına giriş qadağandır.",
+"text": "Yük maşınlarına giriş qadağandır."
+},
+{
+"key": "Sola dönmək qadağandır. Düz get və ya sağa dön.",
+"text": "Sola dönmək qadağandır. Düz get və ya sağa dön."
+},
+{
+"key": "Sağa dönmək qadağandır. Düz get və ya sola dön.",
+"text": "Sağa dönmək qadağandır. Düz get və ya sola dön."
+},
+{
+"key": "Geri dönmək qadağandır.",
+"text": "Geri dönmək qadağandır."
+},
+{
+"key": "3,5 tondan ağır maşınlara qadağa.",
+"text": "3,5 tondan ağır maşınlara qadağa."
+},
+{
+"key": "7,5 tondan ağır maşınlara qadağa.",
+"text": "7,5 tondan ağır maşınlara qadağa."
+},
+{
+"key": "Piyada keçidi. Yavaşla, piyada varsa dayan və keçirt.",
+"text": "Piyada keçidi. Yavaşla, piyada varsa dayan və keçirt."
+},
+{
+"key": "Birtərəfli yol. Əks istiqamətdə getmə.",
+"text": "Birtərəfli yol. Əks istiqamətdə getmə."
+},
+{
+"key": "Magistral yol. Piyada və velosiped girə bilməz, dayanmaq qadağandır.",
+"text": "Magistral yol. Piyada və velosiped girə bilməz, dayanmaq qadağandır."
+},
+{
+"key": "Avtobus dayanacağı. Avtobus və piyada üçün diqqətli ol.",
+"text": "Avtobus dayanacağı. Avtobus və piyada üçün diqqətli ol."
+},
+{
+"key": "Parkinq yeri.",
+"text": "Parkinq yeri."
+},
+{
+"key": "Taksi dayanacağı.",
+"text": "Taksi dayanacağı."
+},
+{
+"key": "Diqqət, uşaqlar ola bilər. Sürəti xeyli azalt.",
+"text": "Diqqət, uşaqlar ola bilər. Sürəti xeyli azalt."
+},
+{
+"key": "Yol işləri. Sürəti azalt, işçilərə və konuslara diqqət et.",
+"text": "Yol işləri. Sürəti azalt, işçilərə və konuslara diqqət et."
+},
+{
+"key": "Qarşıda piyada keçidi. Yavaşla, piyada varsa dayan.",
+"text": "Qarşıda piyada keçidi. Yavaşla, piyada varsa dayan."
+},
+{
+"key": "Velosipedçilər ola bilər. Ötəndə məsafə saxla.",
+"text": "Velosipedçilər ola bilər. Ötəndə məsafə saxla."
+},
+{
+"key": "Qarşıda sola əyri. Sürəti azalt, ötmə.",
+"text": "Qarşıda sola əyri. Sürəti azalt, ötmə."
+},
+{
+"key": "Qarşıda sağa əyri. Sürəti azalt, ötmə.",
+"text": "Qarşıda sağa əyri. Sürəti azalt, ötmə."
+},
+{
+"key": "Kəskin sola əyri. Yavaşla, ötmə.",
+"text": "Kəskin sola əyri. Yavaşla, ötmə."
+},
+{
+"key": "Kəskin sağa əyri. Yavaşla, ötmə.",
+"text": "Kəskin sağa əyri. Yavaşla, ötmə."
+},
+{
+"key": "Yolda ev heyvanları ola bilər. Yavaşla.",
+"text": "Yolda ev heyvanları ola bilər. Yavaşla."
+},
+{
+"key": "Vəhşi heyvanlar yola çıxa bilər. Yavaşla.",
+"text": "Vəhşi heyvanlar yola çıxa bilər. Yavaşla."
+},
+{
+"key": "Qarşıda təhlükə var. Diqqətli ol, yavaşla.",
+"text": "Qarşıda təhlükə var. Diqqətli ol, yavaşla."
+},
+{
+"key": "Yol səthi pisdir. Sürəti azalt.",
+"text": "Yol səthi pisdir. Sürəti azalt."
+},
+{
+"key": "Yol sürüşkəndir. Yavaşla, kəskin əyləc və manevr etmə.",
+"text": "Yol sürüşkəndir. Yavaşla, kəskin əyləc və manevr etmə."
+},
+{
+"key": "Qarşıda yavaşladıcı. Sürəti xeyli azalt.",
+"text": "Qarşıda yavaşladıcı. Sürəti xeyli azalt."
+},
+{
+"key": "Qarşıda svetofor. İşığa bax, qırmızıda dayan.",
+"text": "Qarşıda svetofor. İşığa bax, qırmızıda dayan."
+},
+{
+"key": "Tramvay yolu. Tramvaya yol ver.",
+"text": "Tramvay yolu. Tramvaya yol ver."
+},
+{
+"key": "İkitərəfli hərəkət başlayır. Öz zolağında qal, sollama.",
+"text": "İkitərəfli hərəkət başlayır. Öz zolağında qal, sollama."
+},
+{
+"key": "Qarşıda dairəvi hərəkət. Yavaşla. Girişdə yol ver nişanı varsa, dairədəkinə yol ver; yoxdursa sağdan gələnə yol ver.",
+"text": "Qarşıda dairəvi hərəkət. Yavaşla. Girişdə yol ver nişanı varsa, dairədəkinə yol ver; yoxdursa sağdan gələnə yol ver."
+},
+{
+"key": "Dairəvi hərəkət. Dairədə saat əqrəbinin əksinə, sağa dönərək get. Girişdə yol ver nişanı varsa, dairədəkinə yol ver. Çıxarkən sağ siqnal ver.",
+"text": "Dairəvi hərəkət. Dairədə saat əqrəbinin əksinə, sağa dönərək get. Girişdə yol ver nişanı varsa, dairədəkinə yol ver. Çıxarkən sağ siqnal ver."
+},
+{
+"key": "Velosiped zolağı. Maşın bu zolağa girməməlidir.",
+"text": "Velosiped zolağı. Maşın bu zolağa girməməlidir."
+},
+{
+"key": "Yalnız sola get.",
+"text": "Yalnız sola get."
+},
+{
+"key": "Yalnız sağa get.",
+"text": "Yalnız sağa get."
+},
+{
+"key": "Yalnız düz get.",
+"text": "Yalnız düz get."
+},
+{
+"key": "Yalnız sola və ya sağa get, düz getmək olmaz.",
+"text": "Yalnız sola və ya sağa get, düz getmək olmaz."
+},
+{
+"key": "Düz və ya sola get. Sağa dönmək olmaz.",
+"text": "Düz və ya sola get. Sağa dönmək olmaz."
+},
+{
+"key": "Düz və ya sağa get. Sola dönmək olmaz.",
+"text": "Düz və ya sağa get. Sola dönmək olmaz."
+},
+{
+"key": "Maneəni soldan keç.",
+"text": "Maneəni soldan keç."
+},
+{
+"key": "Maneəni sağdan keç.",
+"text": "Maneəni sağdan keç."
+},
+{
+"key": "Maneəni istənilən tərəfdən keçə bilərsən.",
+"text": "Maneəni istənilən tərəfdən keçə bilərsən."
+},
+{
+"key": "Sürət limiti ",
+"text": "Sürət limiti "
+},
+{
+"key": "Dairəvi hərəkət, yol ver nişanı var. Dairədə gedənlərə yol ver, dairə azad olanda gir. Çıxarkən sağ siqnal ver.",
+"text": "Dairəvi hərəkət, yol ver nişanı var. Dairədə gedənlərə yol ver, dairə azad olanda gir. Çıxarkən sağ siqnal ver."
+},
+{
+"key": "Dairəvi hərəkət. Yavaşla, girişi və dairədəkiləri yoxla.",
+"text": "Dairəvi hərəkət. Yavaşla, girişi və dairədəkiləri yoxla."
+},
+{
+"key": "Yerdə piyada keçidi xətləri görünür. Yavaşla.",
+"text": "Yerdə piyada keçidi xətləri görünür. Yavaşla."
+},
+{
+"key": "Sürət limiti 5.",
+"text": "Sürət limiti 5."
+},
+{
+"key": "Sürət limiti 5. Sən çox sürürsən, yavaşla!",
+"text": "Sürət limiti 5. Sən çox sürürsən, yavaşla!"
+},
+{
+"key": "Sürət limiti 10.",
+"text": "Sürət limiti 10."
+},
+{
+"key": "Sürət limiti 10. Sən çox sürürsən, yavaşla!",
+"text": "Sürət limiti 10. Sən çox sürürsən, yavaşla!"
+},
+{
+"key": "Sürət limiti 20.",
+"text": "Sürət limiti 20."
+},
+{
+"key": "Sürət limiti 20. Sən çox sürürsən, yavaşla!",
+"text": "Sürət limiti 20. Sən çox sürürsən, yavaşla!"
+},
+{
+"key": "Sürət limiti 30.",
+"text": "Sürət limiti 30."
+},
+{
+"key": "Sürət limiti 30. Sən çox sürürsən, yavaşla!",
+"text": "Sürət limiti 30. Sən çox sürürsən, yavaşla!"
+},
+{
+"key": "Sürət limiti 40.",
+"text": "Sürət limiti 40."
+},
+{
+"key": "Sürət limiti 40. Sən çox sürürsən, yavaşla!",
+"text": "Sürət limiti 40. Sən çox sürürsən, yavaşla!"
+},
+{
+"key": "Sürət limiti 50.",
+"text": "Sürət limiti 50."
+},
+{
+"key": "Sürət limiti 50. Sən çox sürürsən, yavaşla!",
+"text": "Sürət limiti 50. Sən çox sürürsən, yavaşla!"
+},
+{
+"key": "Sürət limiti 60.",
+"text": "Sürət limiti 60."
+},
+{
+"key": "Sürət limiti 60. Sən çox sürürsən, yavaşla!",
+"text": "Sürət limiti 60. Sən çox sürürsən, yavaşla!"
+},
+{
+"key": "Sürət limiti 70.",
+"text": "Sürət limiti 70."
+},
+{
+"key": "Sürət limiti 70. Sən çox sürürsən, yavaşla!",
+"text": "Sürət limiti 70. Sən çox sürürsən, yavaşla!"
+},
+{
+"key": "Sürət limiti 80.",
+"text": "Sürət limiti 80."
+},
+{
+"key": "Sürət limiti 80. Sən çox sürürsən, yavaşla!",
+"text": "Sürət limiti 80. Sən çox sürürsən, yavaşla!"
+},
+{
+"key": "Sürət limiti 90.",
+"text": "Sürət limiti 90."
+},
+{
+"key": "Sürət limiti 90. Sən çox sürürsən, yavaşla!",
+"text": "Sürət limiti 90. Sən çox sürürsən, yavaşla!"
+},
+{
+"key": "Sürət limiti 100.",
+"text": "Sürət limiti 100."
+},
+{
+"key": "Sürət limiti 100. Sən çox sürürsən, yavaşla!",
+"text": "Sürət limiti 100. Sən çox sürürsən, yavaşla!"
+},
+{
+"key": "Sürət limiti 110.",
+"text": "Sürət limiti 110."
+},
+{
+"key": "Sürət limiti 110. Sən çox sürürsən, yavaşla!",
+"text": "Sürət limiti 110. Sən çox sürürsən, yavaşla!"
+},
+{
+"key": "Sürət limiti 120.",
+"text": "Sürət limiti 120."
+},
+{
+"key": "Sürət limiti 120. Sən çox sürürsən, yavaşla!",
+"text": "Sürət limiti 120. Sən çox sürürsən, yavaşla!"
+},
+{
+"key": "Sürət limiti 130.",
+"text": "Sürət limiti 130."
+},
+{
+"key": "Sürət limiti 130. Sən çox sürürsən, yavaşla!",
+"text": "Sürət limiti 130. Sən çox sürürsən, yavaşla!"
+},
+{
+"key": "Sürət limiti 10. Yavaşla.",
+"text": "Sürət limiti 10. Yavaşla."
+},
+{
+"key": "Sürət limiti 20. Yavaşla.",
+"text": "Sürət limiti 20. Yavaşla."
+},
+{
+"key": "Sürət limiti 30. Yavaşla.",
+"text": "Sürət limiti 30. Yavaşla."
+},
+{
+"key": "Sürət limiti 40. Yavaşla.",
+"text": "Sürət limiti 40. Yavaşla."
+},
+{
+"key": "Sürət limiti 50. Yavaşla.",
+"text": "Sürət limiti 50. Yavaşla."
+},
+{
+"key": "Sürət limiti 60. Yavaşla.",
+"text": "Sürət limiti 60. Yavaşla."
+},
+{
+"key": "Sürət limiti 70. Yavaşla.",
+"text": "Sürət limiti 70. Yavaşla."
+},
+{
+"key": "Sürət limiti 80. Yavaşla.",
+"text": "Sürət limiti 80. Yavaşla."
+},
+{
+"key": "Sürət limiti 90. Yavaşla.",
+"text": "Sürət limiti 90. Yavaşla."
+},
+{
+"key": "Sürət limiti 100. Yavaşla.",
+"text": "Sürət limiti 100. Yavaşla."
+},
+{
+"key": "Sürət limiti 110. Yavaşla.",
+"text": "Sürət limiti 110. Yavaşla."
+},
+{
+"key": "Sürət limiti 120. Yavaşla.",
+"text": "Sürət limiti 120. Yavaşla."
+},
+{
+"key": "Sürət limiti 130. Yavaşla.",
+"text": "Sürət limiti 130. Yavaşla."
+},
+{
+"key": "Piyada var, diqqətli ol.",
+"text": "Piyada var, diqqətli ol."
+},
+{
+"key": "Svetofor görünür.",
+"text": "Svetofor görünür."
+},
+{
+"key": "Svetofor görünür, qırmızı.",
+"text": "Svetofor görünür, qırmızı."
+},
+{
+"key": "Svetofor görünür, yaşıl.",
+"text": "Svetofor görünür, yaşıl."
+},
+{
+"key": "Svetofor görünür, sarı.",
+"text": "Svetofor görünür, sarı."
+},
+{
+"key": "Yol ver nişanı var. Sağda maşın görünür, ona yol ver.",
+"text": "Yol ver nişanı var. Sağda maşın görünür, ona yol ver."
+},
+{
+"key": "Yol ver nişanı var. Solda maşın görünür, ona yol ver.",
+"text": "Yol ver nişanı var. Solda maşın görünür, ona yol ver."
+},
+{
+"key": "Qabaqdakı maşına sürətlə yaxınlaşırsan, əyləc!",
+"text": "Qabaqdakı maşına sürətlə yaxınlaşırsan, əyləc!"
+},
+{
+"key": "Məsafəni saxla! Qabaqdakı maşına çox yaxınsan.",
+"text": "Məsafəni saxla! Qabaqdakı maşına çox yaxınsan."
+},
+{
+"key": "Qabaqdakı maşına çox yaxınsan!",
+"text": "Qabaqdakı maşına çox yaxınsan!"
+},
+{
+"key": "Sağ xəttə yaxınlaşırsan.",
+"text": "Sağ xəttə yaxınlaşırsan."
+},
+{
+"key": "Sol xəttə yaxınlaşırsan.",
+"text": "Sol xəttə yaxınlaşırsan."
+},
+{
+"key": "Qabaqda yerdə piyada keçidi var, yavaşla.",
+"text": "Qabaqda yerdə piyada keçidi var, yavaşla."
+},
+{
+"key": "Salam, mən AC Nav. Səsim eşidilirmi?",
+"text": "Salam, mən AC Nav. Səsim eşidilirmi?"
+},
+{
+"key": "İnsan səsi açıqdır.",
+"text": "İnsan səsi açıqdır."
+},
+{
+"key": "AC Nav hazırdır.",
+"text": "AC Nav hazırdır."
+},
+{
+"key": "Sınaq başlayır.",
+"text": "Sınaq başlayır."
+},
+{
+"key": "Təyinat nöqtəsinə çatdınız.",
+"text": "Təyinat nöqtəsinə çatdınız."
+},
+{
+"key": "Stop! Dayan.",
+"text": "Stop! Dayan."
+},
+{
+"key": "Sağa bax, sola bax, qarşıdan gələnə yol ver.",
+"text": "Sağa bax, sola bax, qarşıdan gələnə yol ver."
+},
+{
+"key": "Sürət yüksəkdir.",
+"text": "Sürət yüksəkdir."
+},
+{
+"key": "adam",
+"text": "adam"
+},
+{
+"key": "velosiped",
+"text": "velosiped"
+},
+{
+"key": "maşın",
+"text": "maşın"
+},
+{
+"key": "motosiklet",
+"text": "motosiklet"
+},
+{
+"key": "təyyarə",
+"text": "təyyarə"
+},
+{
+"key": "avtobus",
+"text": "avtobus"
+},
+{
+"key": "qatar",
+"text": "qatar"
+},
+{
+"key": "yük maşını",
+"text": "yük maşını"
+},
+{
+"key": "svetofor",
+"text": "svetofor"
+},
+{
+"key": "yanğın kranı",
+"text": "yanğın kranı"
+},
+{
+"key": "stop nişanı",
+"text": "stop nişanı"
+},
+{
+"key": "parkomat",
+"text": "parkomat"
+},
+{
+"key": "skamya",
+"text": "skamya"
+},
+{
+"key": "quş",
+"text": "quş"
+},
+{
+"key": "pişik",
+"text": "pişik"
+},
+{
+"key": "it",
+"text": "it"
+},
+{
+"key": "at",
+"text": "at"
+},
+{
+"key": "qoyun",
+"text": "qoyun"
+},
+{
+"key": "inək",
+"text": "inək"
+},
+{
+"key": "fil",
+"text": "fil"
+},
+{
+"key": "ayı",
+"text": "ayı"
+},
+{
+"key": "zebra",
+"text": "zebra"
+},
+{
+"key": "zürafə",
+"text": "zürafə"
+},
+{
+"key": "bel çantası",
+"text": "bel çantası"
+},
+{
+"key": "çətir",
+"text": "çətir"
+},
+{
+"key": "çanta",
+"text": "çanta"
+},
+{
+"key": "qalstuk",
+"text": "qalstuk"
+},
+{
+"key": "çemodan",
+"text": "çemodan"
+},
+{
+"key": "frisbi",
+"text": "frisbi"
+},
+{
+"key": "xizək",
+"text": "xizək"
+},
+{
+"key": "snoubord",
+"text": "snoubord"
+},
+{
+"key": "top",
+"text": "top"
+},
+{
+"key": "uçurtma",
+"text": "uçurtma"
+},
+{
+"key": "beysbol çubuğu",
+"text": "beysbol çubuğu"
+},
+{
+"key": "beysbol əlcəyi",
+"text": "beysbol əlcəyi"
+},
+{
+"key": "skeytbord",
+"text": "skeytbord"
+},
+{
+"key": "sörf taxtası",
+"text": "sörf taxtası"
+},
+{
+"key": "tennis raketi",
+"text": "tennis raketi"
+},
+{
+"key": "butulka",
+"text": "butulka"
+},
+{
+"key": "bokal",
+"text": "bokal"
+},
+{
+"key": "stəkan",
+"text": "stəkan"
+},
+{
+"key": "çəngəl",
+"text": "çəngəl"
+},
+{
+"key": "bıçaq",
+"text": "bıçaq"
+},
+{
+"key": "qaşıq",
+"text": "qaşıq"
+},
+{
+"key": "kasa",
+"text": "kasa"
+},
+{
+"key": "banan",
+"text": "banan"
+},
+{
+"key": "alma",
+"text": "alma"
+},
+{
+"key": "sendviç",
+"text": "sendviç"
+},
+{
+"key": "portağal",
+"text": "portağal"
+},
+{
+"key": "brokoli",
+"text": "brokoli"
+},
+{
+"key": "kök",
+"text": "kök"
+},
+{
+"key": "hot-doq",
+"text": "hot-doq"
+},
+{
+"key": "pizza",
+"text": "pizza"
+},
+{
+"key": "dönət",
+"text": "dönət"
+},
+{
+"key": "tort",
+"text": "tort"
+},
+{
+"key": "stul",
+"text": "stul"
+},
+{
+"key": "divan",
+"text": "divan"
+},
+{
+"key": "bitki",
+"text": "bitki"
+},
+{
+"key": "çarpayı",
+"text": "çarpayı"
+},
+{
+"key": "masa",
+"text": "masa"
+},
+{
+"key": "tualet",
+"text": "tualet"
+},
+{
+"key": "televizor",
+"text": "televizor"
+},
+{
+"key": "noutbuk",
+"text": "noutbuk"
+},
+{
+"key": "siçan",
+"text": "siçan"
+},
+{
+"key": "pult",
+"text": "pult"
+},
+{
+"key": "klaviatura",
+"text": "klaviatura"
+},
+{
+"key": "telefon",
+"text": "telefon"
+},
+{
+"key": "mikrodalğa",
+"text": "mikrodalğa"
+},
+{
+"key": "soba",
+"text": "soba"
+},
+{
+"key": "toster",
+"text": "toster"
+},
+{
+"key": "əlüzyuyan",
+"text": "əlüzyuyan"
+},
+{
+"key": "soyuducu",
+"text": "soyuducu"
+},
+{
+"key": "kitab",
+"text": "kitab"
+},
+{
+"key": "saat",
+"text": "saat"
+},
+{
+"key": "vaza",
+"text": "vaza"
+},
+{
+"key": "qayçı",
+"text": "qayçı"
+},
+{
+"key": "oyuncaq ayı",
+"text": "oyuncaq ayı"
+},
+{
+"key": "fen",
+"text": "fen"
+},
+{
+"key": "diş fırçası",
+"text": "diş fırçası"
+},
+{
+"key": "piyada",
+"text": "piyada"
+},
+{
+"key": "Yolda it ola bilər, yavaşla.",
+"text": "Yolda it ola bilər, yavaşla."
+},
+{
+"key": "Yolda pişik ola bilər, yavaşla.",
+"text": "Yolda pişik ola bilər, yavaşla."
+},
+{
+"key": "Yolda at ola bilər, yavaşla.",
+"text": "Yolda at ola bilər, yavaşla."
+},
+{
+"key": "Yolda qoyun ola bilər, yavaşla.",
+"text": "Yolda qoyun ola bilər, yavaşla."
+},
+{
+"key": "Yolda inək ola bilər, yavaşla.",
+"text": "Yolda inək ola bilər, yavaşla."
+},
+{
+"key": "Yolda quş ola bilər, yavaşla.",
+"text": "Yolda quş ola bilər, yavaşla."
+},
+{
+"key": "Yolda ayı ola bilər, yavaşla.",
+"text": "Yolda ayı ola bilər, yavaşla."
+},
+{
+"key": "Yolda fil ola bilər, yavaşla.",
+"text": "Yolda fil ola bilər, yavaşla."
+},
+{
+"key": "Yolda zebra ola bilər, yavaşla.",
+"text": "Yolda zebra ola bilər, yavaşla."
+},
+{
+"key": "Yolda zürafə ola bilər, yavaşla.",
+"text": "Yolda zürafə ola bilər, yavaşla."
+},
+{
+"key": "solda",
+"text": "solda"
+},
+{
+"key": "qabaqda",
+"text": "qabaqda"
+},
+{
+"key": "sağda",
+"text": "sağda"
+},
+{
+"key": "2",
+"text": "iki"
+},
+{
+"key": "3",
+"text": "üç"
+},
+{
+"key": "4",
+"text": "dörd"
+},
+{
+"key": "5",
+"text": "beş"
+},
+{
+"key": "6",
+"text": "altı"
+},
+{
+"key": "7",
+"text": "yeddi"
+},
+{
+"key": "8",
+"text": "səkkiz"
+},
+{
+"key": "9",
+"text": "doqquz"
+},
+{
+"key": "10",
+"text": "on"
+},
+{
+"key": "svetofor qırmızı",
+"text": "svetofor qırmızı"
+},
+{
+"key": "svetofor yaşıl",
+"text": "svetofor yaşıl"
+},
+{
+"key": "svetofor sarı",
+"text": "svetofor sarı"
+}
+]
