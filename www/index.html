@@ -54,6 +54,8 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
 #st{position:fixed;inset:0;z-index:3500;background:rgba(0,0,0,.82);display:none;overflow:auto;padding:calc(16px + env(safe-area-inset-top,0)) 14px 24px}
 #st .card{background:#1d242a;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;max-width:480px;margin:0 auto}
 #st h2{margin:0 0 4px;font-size:22px}#stn{color:#9fe3b7;min-height:1.2em;line-height:1.4;margin:0}
+#ck,#cl{position:absolute;bottom:calc(122px + env(safe-area-inset-bottom,0));z-index:5;padding:8px 12px}
+#ck{right:10px}#cl{right:64px}
 #cx{position:absolute;top:calc(10px + env(safe-area-inset-top,0));right:10px}
 #tch{z-index:3000}
 .b{touch-action:manipulation}
@@ -79,12 +81,14 @@ html,body{height:100%;background:var(--ink);color:var(--txt);font-family:system-
     <button class="b" onclick="location.reload()">Çıx</button>
   </div>
 </div>
-<div id="camv"><video id="cv" playsinline muted></video><canvas id="cc"></canvas><div id="cn"></div><div id="cd"></div><div id="ci"></div><button class="b" id="cm">🧠 Hər şey</button><button class="b" id="cg">⚙</button><button class="b" id="cx">✕ Bağla</button></div>
+<div id="camv"><video id="cv" playsinline muted></video><canvas id="cc"></canvas><div id="cn"></div><div id="cd"></div><div id="ci"></div><button class="b" id="cm">🧠 Hər şey</button><button class="b" id="cg">⚙</button><button class="b" id="ck">📏</button><button class="b" id="cl">🎯</button><button class="b" id="cx">✕ Bağla</button></div>
 <div id="st"><div class="card"><h2>⚙ Ayarlar</h2>
   <button class="b" id="s_beep"></button>
   <button class="b" id="s_voice"></button>
   <button class="b" id="s_all"></button>
   <button class="b" id="s_acc"></button>
+  <button class="b" id="s_src"></button>
+  <button class="b" id="s_lane"></button>
   <button class="b" id="s_test">🔊 İnsan səsini yoxla</button>
   <button class="b" id="s_inst">📥 Səs datası quraşdır (Android)</button>
   <p id="stn"></p>
@@ -138,7 +142,7 @@ Object.assign(T.bump,{e:'Sürəti xeyli azalt, yavaş keç.'});
 Object.assign(T.rail,{e:'Şlaqbaum bağlıdırsa və ya qırmızı işıq yanırsa keçmə. Qatar olmadığına əmin ol.'});
 let map,me,hl,hz={},ann={},heading=null,last=null,lim=null,voiceOn=true,voice=null,watchId=null,timer=null,lastFetch=null,lastRound=0,lastSp=0,rw={},lastPos=null,lastW=null,curSpd=0;
 /* Ayarlar (telefonda yadda qalır) */
-const ST=Object.assign({beep:true,voice:true,all:true,acc:'fast'},(()=>{try{return JSON.parse(localStorage.getItem('acnav-st')||'{}')}catch(e){return{}}})());
+const ST=Object.assign({beep:true,voice:true,all:true,acc:'fast',src:'clip',lane:true,fk:1,lane0:0},(()=>{try{return JSON.parse(localStorage.getItem('acnav-st')||'{}')}catch(e){return{}}})());
 function saveST(){try{localStorage.setItem('acnav-st',JSON.stringify(ST))}catch(e){}}
 voiceOn=ST.voice!==false;
 function voiceNote(x){$('vnote').textContent=x;$('stn').textContent=x}
@@ -175,26 +179,49 @@ function webSay(t){
   speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(az?t:trFix(t));u.lang=voice?voice.lang:'tr-TR';if(voice)u.voice=voice;u.rate=.95;speechSynthesis.speak(u);return true;
 }
-let spkUntil=0;
-/* low=true: yalnız danışmırsa de (kameranın "adını çəkmə" mesajları təhlükə xəbərdarlığını kəsməsin) */
-function say(t,low){
+let spkUntil=0,VOICE=null,vctx=null,vgen=0,vsrc=null;const vbuf={};
+async function loadVoiceIdx(){if(VOICE!==null)return;try{const r=await fetch('voice/index.json');VOICE=r.ok?await r.json():{}}catch(e){VOICE={}}}
+loadVoiceIdx();
+function vAC(){const A=window.AudioContext||window.webkitAudioContext;if(!vctx)vctx=new A();if(vctx.state==='suspended')vctx.resume();return vctx}
+async function clipBuf(f){
+  if(vbuf[f])return vbuf[f];
+  const r=await fetch('voice/'+f);if(!r.ok)throw new Error('voice/'+f+' '+r.status);
+  const ab=await r.arrayBuffer();
+  return vbuf[f]=await new Promise((res,rej)=>{const p=vAC().decodeAudioData(ab,res,rej);if(p&&p.catch)p.catch(rej)});
+}
+async function playClips(files){
+  const g=++vgen;
+  try{if(vsrc){vsrc.onended=null;vsrc.stop()}}catch(e){}
+  for(const f of files){
+    const b=await clipBuf(f);if(g!==vgen)return;
+    await new Promise(res=>{const x=vAC().createBufferSource();x.buffer=b;x.connect(vAC().destination);vsrc=x;x.onended=res;x.start()});
+    if(g!==vgen)return;
+  }
+}
+function filesFor(t,parts){if(!VOICE)return null;const fs=(parts||[t]).map(k=>VOICE[k]);return fs.every(Boolean)?fs:null}
+function ttsSay(t){
+  try{
+    if(TTS){TTS.stop().catch(()=>{}).then(()=>nativeSay(t)).catch(e=>{showT('Telefon səsi xətası: '+(e&&e.message||e)+' → brauzer səsi');if(!webSay(t))beep()});return}
+    if(!webSay(t))beep();
+  }catch(e){beep();showT('Səs xətası: '+e.message)}
+}
+/* low=true: yalnız danışmırsa de. parts: hazır səs fayllarının açarları (məs. ["solda","maşın"]) */
+function say(t,low,parts){
   if(!voiceOn)return false;
   if(low&&Date.now()<spkUntil)return false;
   spkUntil=Date.now()+Math.min(9000,1200+t.length*85);
-  try{
-    if(TTS){
-      TTS.stop().catch(()=>{}).then(()=>nativeSay(t)).catch(e=>{showT('Telefon səsi xətası: '+(e&&e.message||e)+' → brauzer səsi');if(!webSay(t))beep()});
-      return true}
-    if(!webSay(t))beep();
-  }catch(e){beep();showT('Səs xətası: '+e.message)}
-  return true;
+  const files=ST.src==='tts'?null:filesFor(t,parts);
+  if(files){playClips(files).catch(e=>{showT('Səs faylı çalınmadı: '+(e&&e.message||e));ttsSay(t)});return true}
+  ttsSay(t);return true;
 }
 function refreshST(){
   const on=x=>x?'AÇIQ ✅':'BAĞLI ⛔';
   $('s_beep').textContent='🔔 Siqnal səsi: '+on(ST.beep);
   $('s_voice').textContent='🗣 İnsan səsi: '+on(ST.voice);
   $('s_all').textContent='🧠 Kamera hər şeyin adını desin: '+on(ST.all);
-  $('s_acc').textContent='🎯 Kamera dəqiqliyi: '+(ST.acc==='acc'?'DƏQİQ (yavaş)':'SÜRƏTLİ');
+  $('s_acc').textContent='🎯 Ehtiyat model (COCO-SSD): '+(ST.acc==='acc'?'DƏQİQ':'SÜRƏTLİ');
+  $('s_src').textContent='🗣 Səs mənbəyi: '+(ST.src==='tts'?'TELEFON SƏSİ':'HAZIR FAYL (avto)');
+  $('s_lane').textContent='🛣 Yerdəki xətlər: '+on(ST.lane);
   $('vbtn').textContent=ST.voice?'🔊':'🔇';
   $('cm').textContent=ST.all?'🧠 Hər şey':'🛣 Yalnız yol';
 }
@@ -208,6 +235,8 @@ $('s_acc').onclick=()=>{ST.acc=ST.acc==='acc'?'fast':'acc';saveST();refreshST();
 $('s_inst').onclick=async()=>{try{if(TTS&&TTS.openInstall){await TTS.openInstall();voiceNote('Açılan pəncərədə Türk dili səs datasını yüklə.')}else voiceNote('Bu funksiya yalnız APK-da var. Telefon Ayarlar → Səs → Mətndən nitqə.')}catch(e){voiceNote('Açılmadı: '+(e&&e.message||e)+'. Telefon Ayarlar → Səs → Mətndən nitqə bölməsinə get.')}};
 $('vbtn').onclick=()=>{ST.voice=!ST.voice;voiceOn=ST.voice;saveST();refreshST();if(voiceOn)say('Salam, mən AC Nav. Səsim eşidilirmi?')};
 $('s_test').onclick=()=>testVoice();
+$('s_src').onclick=()=>{ST.src=ST.src==='tts'?'clip':'tts';saveST();refreshST();testVoice()};
+$('s_lane').onclick=()=>{ST.lane=!ST.lane;saveST();refreshST()};
 refreshST();
 
 /* Xəritə */
@@ -505,11 +534,17 @@ async function testVoice(){
   beep();
   const T='Salam, mən AC Nav. Səsim eşidilirmi?';
   if(!ST.voice){voiceNote('İnsan səsi ayarlarda BAĞLIdır. ⚙ Ayarlar-dan aç.');return}
+  if(ST.src!=='tts'){
+    await loadVoiceIdx();
+    const f=VOICE&&VOICE[T];
+    if(f){try{await playClips([f]);voiceNote('Hazır səs faylı çalındı ('+Object.keys(VOICE).length+' fayl). Eşitmirsənsə telefonun media səsini artır.');return}catch(e){voiceNote('Səs faylı xətası: '+(e&&e.message||e)+' → telefon səsi yoxlanır')}}
+    else voiceNote('Hazır səs faylları yoxdur (build-də yaranmayıb) → telefon səsi yoxlanır.');
+  }
   if(TTS){
     await initTTS();
-    try{await nativeSay(T);voiceNote('Telefon nitqi göndərildi ('+ttsLang+'). Eşitmirsənsə: "📥 Səs datası quraşdır" düyməsinə bas və ya telefonda Google "Speech Services" olsun.')}
-    catch(e){voiceNote('Nitq xətası: '+(e&&e.message||e))}
-  }else{say(T);voiceNote('Brauzer səsi: '+(voice?voice.lang:'uyğun səs tapılmadı, siqnal çalındı'))}
+    try{await nativeSay(T);voiceNote('Telefon nitqi göndərildi ('+ttsLang+'). Eşitmirsənsə: "📥 Səs datası quraşdır" düyməsinə bas.')}
+    catch(e){voiceNote('Telefon nitqi xətası: '+(e&&e.message||e))}
+  }else{ttsSay(T);voiceNote('Brauzer səsi: '+(voice?voice.lang:'uyğun səs tapılmadı, siqnal çalındı'))}
 }
 $('vtest').onclick=testVoice;
 $('tch').onclick=()=>$('tch').style.display='none';
@@ -631,10 +666,10 @@ function iou(a,b){const x1=Math.max(a.x,b.x),y1=Math.max(a.y,b.y),x2=Math.min(a.
 /* YOLO çıxışını açır. Dəstəklənən formatlar:
    [1,67,N] / [1,N,67]  - xam YOLO (NMS-i özümüz edirik)
    [1,N,6] / [1,6,N]    - modelin içində NMS var: x1,y1,x2,y2,skor,sinif */
-const sgDbg={shapes:'',best:null,fmt:'?'};
-function decodeSigns(outs,S,s,px,py,thr){
-  const nc=SC.length,C=nc+4,c=[];let fmt='';
-  sgDbg.shapes=outs.map(o=>'['+o.sh.join(',')+']').join(' ');sgDbg.best=null;
+const sgDbg={shapes:'',best:null,fmt:'?'},yoDbg={shapes:'',best:null,fmt:'?'};
+function decodeY(outs,nc,S,s,px,py,thr,dbg){
+  const C=nc+4,c=[];let fmt='';
+  dbg.shapes=outs.map(o=>'['+o.sh.join(',')+']').join(' ');dbg.best=null;
   for(const {sh,d} of outs){
     if(sh.length!==3)continue;
     let N,get,mode;
@@ -649,7 +684,7 @@ function decodeSigns(outs,S,s,px,py,thr){
       const k=mw<=2?S:1;
       for(let i=0;i<N;i++){
         let b=0,bs=0;for(let j=0;j<nc;j++){const q=get(4+j,i);if(q>bs){bs=q;b=j}}
-        if(!sgDbg.best||bs>sgDbg.best.sc)sgDbg.best={cl:b,sc:bs};
+        if(!dbg.best||bs>dbg.best.sc)dbg.best={cl:b,sc:bs};
         if(bs<thr)continue;
         const cx=get(0,i)*k,cy=get(1,i)*k,w=get(2,i)*k,h=get(3,i)*k;
         c.push({cl:b,sc:bs,x:(cx-w/2-px)/s,y:(cy-h/2-py)/s,w:w/s,h:h/s});
@@ -660,7 +695,7 @@ function decodeSigns(outs,S,s,px,py,thr){
       for(let i=0;i<N;i++){
         const sc=get(4,i),cl=Math.round(get(5,i));
         if(cl<0||cl>=nc)continue;
-        if(!sgDbg.best||sc>sgDbg.best.sc)sgDbg.best={cl,sc};
+        if(!dbg.best||sc>dbg.best.sc)dbg.best={cl,sc};
         if(sc<thr)continue;
         let x1=get(0,i)*k,y1=get(1,i)*k,x2=get(2,i)*k,y2=get(3,i)*k;
         if(x2<x1||y2<y1){const cx=x1,cy=y1,w=x2,h=y2;x1=cx-w/2;y1=cy-h/2;x2=cx+w/2;y2=cy+h/2}
@@ -668,12 +703,11 @@ function decodeSigns(outs,S,s,px,py,thr){
       }
     }
   }
-  sgDbg.fmt=fmt||'TANINMADI';
-  c.sort((a,b)=>b.sc-a.sc);const keep=[];
-  for(const a of c){if(keep.every(b=>iou(a,b)<.45))keep.push(a);if(keep.length>=8)break}
-  return keep;
+  dbg.fmt=fmt||'TANINMADI';
+  return c;
 }
-/* tile: 0 = bütün kadr, 1 = sol 60%, 2 = sağ 60% (kənardakı kiçik nişanlar böyüyüb tanınsın) */
+function nmsAgn(c,th,max){c.sort((a,b)=>b.sc-a.sc);const keep=[];for(const a of c){if(keep.every(b=>iou(a,b)<th))keep.push(a);if(keep.length>=max)break}return keep}
+function decodeSigns(outs,S,s,px,py,thr){return nmsAgn(decodeY(outs,SC.length,S,s,px,py,thr,sgDbg),.45,8)}
 async function detectSigns(v,tile){
   const S=smS,vw=v.videoWidth,vh=v.videoHeight;
   const R=tile===1?{x:0,y:0,w:Math.round(vw*.6),h:vh}:tile===2?{x:Math.round(vw*.4),y:0,w:vw-Math.round(vw*.4),h:vh}:{x:0,y:0,w:vw,h:vh};
@@ -701,77 +735,194 @@ const ANIM=new Set(['dog','cat','horse','sheep','cow','bird','bear','elephant','
 const recent=n=>Date.now()-(seenAt[n]||0)<10000;
 let allOn=ST.all,lastScene=0;const named={};
 $('cm').onclick=()=>{ST.all=!ST.all;allOn=ST.all;saveST();refreshST()};
-/* Obyekt izləyicisi: eyni obyekt kadrlar arası izlənir, 2+ dəfə görünməyibsə elan edilmir (yalançı tanıma azalır) */
-let tracks=[],tid=0,sgSeen={},tileN=0,cocoSrc='',cmodelAcc='';
+/* ===== Obyekt aşkarlama: YOLOv8n (COCO, 80 sinif). Yoxdursa ehtiyat: COCO-SSD ===== */
+const YL=['person','bicycle','car','motorcycle','airplane','bus','train','truck','boat','traffic light','fire hydrant','stop sign','parking meter','bench','bird','cat','dog','horse','sheep','cow','elephant','bear','zebra','giraffe','backpack','umbrella','handbag','tie','suitcase','frisbee','skis','snowboard','sports ball','kite','baseball bat','baseball glove','skateboard','surfboard','tennis racket','bottle','wine glass','cup','fork','knife','spoon','bowl','banana','apple','sandwich','orange','broccoli','carrot','hot dog','pizza','donut','cake','chair','couch','potted plant','bed','dining table','toilet','tv','laptop','mouse','remote','keyboard','cell phone','microwave','oven','toaster','sink','refrigerator','book','clock','vase','scissors','teddy bear','hair drier','toothbrush'];
+const GRPM={car:'v',truck:'v',bus:'v',motorcycle:'v'},grp=c=>GRPM[c]||c;
+const RH={car:1.5,truck:3,bus:3.2,motorcycle:1.4,person:1.7};
+const lc=t=>t.replace(/İ/g,'i').replace(/I/g,'ı').toLowerCase();
+let yo=null,yoS=640,yoNCHW=false,yoSrc='',yoErr='',yoTried=false;
+async function loadYolo(){
+  try{
+    yo=await tf.loadGraphModel('models/yolo8/model.json');yoSrc='APK';
+    const sh=yo.inputs&&yo.inputs[0]&&yo.inputs[0].shape;
+    if(sh&&sh.length===4){if(sh[1]===3){yoNCHW=true;if(sh[2]>0)yoS=sh[2]}else if(sh[1]>0)yoS=sh[1]}
+    return true;
+  }catch(e){yo=null;yoErr=String(e&&e.message||e).slice(0,70);return false}
+}
+/* eyni obyektin parçalanması/üst-üstə düşməsi: eyni qrupda IoU>0.5 və ya biri digərinin içindədirsə (>85%) kiçik atılır */
+function cleanObjs(c){
+  c.sort((a,b)=>b.sc-a.sc);const keep=[];
+  for(const a of c){
+    const ga=grp(YL[a.cl]);let ok=true;
+    for(const b of keep){
+      if(grp(YL[b.cl])!==ga)continue;
+      const x1=Math.max(a.x,b.x),y1=Math.max(a.y,b.y),x2=Math.min(a.x+a.w,b.x+b.w),y2=Math.min(a.y+a.h,b.y+b.h),i=Math.max(0,x2-x1)*Math.max(0,y2-y1);
+      const u=a.w*a.h+b.w*b.h-i,mn=Math.min(a.w*a.h,b.w*b.h);
+      if(i/(u||1)>.5||i/(mn||1)>.85){ok=false;break}
+    }
+    if(ok)keep.push(a);if(keep.length>=25)break;
+  }
+  return keep.map(o=>({class:YL[o.cl],score:o.sc,bbox:[o.x,o.y,o.w,o.h]}));
+}
+async function detectYolo(v){
+  const S=yoS,vw=v.videoWidth,vh=v.videoHeight,s=Math.min(S/vw,S/vh),nw=Math.round(vw*s),nh=Math.round(vh*s),px=Math.floor((S-nw)/2),py=Math.floor((S-nh)/2);
+  const inp=tf.tidy(()=>{let x=tf.image.resizeBilinear(tf.browser.fromPixels(v),[nh,nw]).pad([[py,S-nh-py],[px,S-nw-px],[0,0]],114).div(255);if(yoNCHW)x=x.transpose([2,0,1]);return x.expandDims(0)});
+  let out;
+  try{out=await yo.executeAsync(inp)}finally{inp.dispose()}
+  const arr=Array.isArray(out)?out:[out];
+  try{
+    const outs=[];for(const t of arr)outs.push({sh:t.shape,d:await t.data()});
+    return cleanObjs(decodeY(outs,80,S,s,px,py,.3,yoDbg));
+  }finally{arr.forEach(t=>{if(t&&typeof t.dispose==='function')t.dispose()})}
+}
+async function detectObjects(v){return yo?detectYolo(v):cmodel.detect(v,20)}
+
+/* Obyekt izləyicisi: eyni obyekt kadrlar arası izlənir, yalançı tanıma azalır */
+let tracks=[],tid=0,sgSeen={},tileN=0,cocoSrc='',cmodelAcc='',lane={at:0,off:null},lastNear=null,lastD=0,lastDims=null,driftSince=0,lcv=null;
 function updateTracks(dets,now){
   const used=new Set();
   for(const t of tracks){
-    let bi=-1,bv=.25;
-    dets.forEach((d,i)=>{if(used.has(i)||d.class!==t.c)return;const q=iou({x:t.x,y:t.y,w:t.w,h:t.h},{x:d.bbox[0],y:d.bbox[1],w:d.bbox[2],h:d.bbox[3]});if(q>bv){bv=q;bi=i}});
-    if(bi>=0){used.add(bi);const d=dets[bi],b=d.bbox,a=.6;
+    let bi=-1,bv=.3;
+    dets.forEach((d,i)=>{if(used.has(i)||grp(d.class)!==grp(t.c))return;const q=iou({x:t.x,y:t.y,w:t.w,h:t.h},{x:d.bbox[0],y:d.bbox[1],w:d.bbox[2],h:d.bbox[3]});if(q>bv){bv=q;bi=i}});
+    if(bi>=0){used.add(bi);const d=dets[bi],b=d.bbox,a=.7;
       t.x=t.x*(1-a)+b[0]*a;t.y=t.y*(1-a)+b[1]*a;t.w=t.w*(1-a)+b[2]*a;t.h=t.h*(1-a)+b[3]*a;
-      t.sc=Math.max(d.score,t.sc*.9);t.hits++;t.miss=0}
+      if(d.score>=t.sc)t.c=d.class;t.sc=Math.max(d.score,t.sc*.9);t.hits++;t.miss=0}
     else t.miss++;
   }
   dets.forEach((d,i)=>{if(!used.has(i)){const b=d.bbox;tracks.push({id:++tid,c:d.class,x:b[0],y:b[1],w:b[2],h:b[3],sc:d.score,hits:1,miss:0,dh:[],ch:[]})}});
-  tracks=tracks.filter(t=>t.miss<=4);
+  tracks=tracks.filter(t=>t.miss<=3);
 }
 const maj=a=>{const c={};let b='',m=0;a.forEach(x=>{if(!x)return;c[x]=(c[x]||0)+1;if(c[x]>m){m=c[x];b=x}});return b};
+
+/* Məsafə: eni və hündürlüyü birlikdə. Kadrın kənarı ilə kəsilmiş ölçü etibarsızdır. */
+function distOf(t,f,vw,vh){
+  const W=RW[t.c],H=RH[t.c];if(!W&&!H)return null;
+  const eX=t.x<3||t.x+t.w>vw-3,eY=t.y<3||t.y+t.h>vh-3;
+  const dw=W?W*f/t.w:null,dh=H?H*f/t.h:null;
+  if(t.c==='person')return{d:eY?(dw||dh):dh,close:false};
+  if(eX&&eY)return{d:Math.min(dw,dh),close:true};
+  if(eX)return{d:dh,close:false};
+  if(eY)return{d:dw,close:false};
+  return{d:(dw+dh)/2,close:false};
+}
+
+/* ===== Yerdəki xətlər (klassik görmə: parlaq nazik zolaqlar + Hough) =====
+   d: RGBA kiçildilmiş kadr, W×H. Qaytarır: sol/sağ xətt, fasiləsiz/qırıq, zolaq mərkəzindən sapma (off), piyada keçidi */
+function analyzeLanes(d,W,H){
+  const y0=Math.floor(H*.5),y1=H-1,L=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++)L[i]=(d[i*4]*77+d[i*4+1]*150+d[i*4+2]*29)>>8;
+  let sum=0,cnt=0;for(let y=y0;y<=y1;y++)for(let x=0;x<W;x++){sum+=L[y*W+x];cnt++}
+  const thr=Math.max(150,sum/cnt+40),mask=new Uint8Array(W*H),pts=[];
+  for(let y=y0;y<=y1;y++)for(let x=6;x<W-6;x++){
+    const i=y*W+x,v=L[i],r=d[i*4],g=d[i*4+1],b=d[i*4+2];
+    const yellow=r>140&&g>110&&b<90&&r-b>70;
+    const bright=v>=thr&&v-((L[i-6]+L[i+6])>>1)>=25;
+    if(bright||yellow){mask[i]=1;pts.push(x,y)}
+  }
+  const res={left:null,right:null,off:null,zebra:false,pts:pts.length/2};
+  const SL=[],SR=[];for(let a=.2;a<=1.31;a+=.05){SL.push(-a);SR.push(a)}
+  const NB=Math.ceil(W*1.5/2)+2;
+  const best=(SS,lo,hi)=>{
+    let bv=0,bs=0,bx=0;
+    for(const sl of SS){
+      const vt=new Int16Array(NB);
+      for(let k=0;k<pts.length;k+=2){const xb=pts[k]+sl*(y1-pts[k+1]);const bi=Math.floor((xb+W/2)/2);if(bi>=0&&bi<NB&&xb>=lo&&xb<=hi)vt[bi]++}
+      for(let bi=1;bi<NB-1;bi++){const t=vt[bi-1]+vt[bi]+vt[bi+1];if(t>bv){bv=t;bs=sl;bx=bi*2-W/2+1}}
+    }
+    return{v:bv,s:bs,xb:bx};
+  };
+  const minV=Math.max(14,(y1-y0)*.35);
+  const mk=h=>{
+    if(h.v<minV)return null;
+    let c=0,n=0;for(let y=y0;y<=y1;y++){const x=Math.round(h.xb+h.s*(y-y1));n++;for(let dx=-2;dx<=2;dx++){const xx=x+dx;if(xx>=0&&xx<W&&mask[y*W+xx]){c++;break}}}
+    return{s:h.s,xb:h.xb,cov:c/n,solid:c/n>=.7,v:h.v};
+  };
+  res.left=mk(best(SL,-W*.5,W*.75));res.right=mk(best(SR,W*.25,W*1.5));
+  if(res.left&&res.right&&res.right.xb-res.left.xb>W*.25){const w=res.right.xb-res.left.xb;res.off=(W/2-(res.left.xb+res.right.xb)/2)/w}
+  /* piyada keçidi: bir neçə ardıcıl parlaq üfüqi zolaq */
+  let runs=0,inRun=false;
+  for(let y=Math.floor(H*.55);y<=Math.floor(H*.95);y++){
+    let c=0,n=0;for(let x=Math.floor(W*.2);x<Math.floor(W*.8);x++){n++;if(L[y*W+x]>=thr)c++}
+    const band=c/n>.5;if(band&&!inRun)runs++;inRun=band;
+  }
+  res.zebra=runs>=3&&runs<=9;
+  return res;
+}
+function drawLanes(g,vw,vh,sc,ox,oy){
+  const W=lane.W,H=lane.H,y0=Math.floor(H*.5),y1=H-1;
+  for(const k of ['left','right']){
+    const l=lane[k];if(!l)continue;
+    g.beginPath();g.lineWidth=5;g.strokeStyle=l.solid?'#ffd400':'#59d0ff';g.setLineDash(l.solid?[]:[12,9]);
+    for(const y of [y0,y1]){const x=l.xb+l.s*(y-y1);const X=x*vw/W*sc+ox,Y=y*vh/H*sc+oy;if(y===y0)g.moveTo(X,Y);else g.lineTo(X,Y)}
+    g.stroke();
+  }
+  g.setLineDash([]);
+}
+const FIXED=(a,b)=>a;
 async function camLoop(){
   const v=$('cv'),cv=$('cc'),g=cv.getContext('2d');let n=0,fr=0,t0=Date.now(),fps=0;
-  tracks=[];sgSeen={};
+  tracks=[];sgSeen={};lane={at:0,off:null};
   while(camOn){
     try{
       const cw=cv.clientWidth,ch=cv.clientHeight;if(cv.width!==cw||cv.height!==ch){cv.width=cw;cv.height=ch}
       g.clearRect(0,0,cw,ch);
       const vw=v.videoWidth,vh=v.videoHeight;if(!vw){await new Promise(r=>setTimeout(r,200));continue}
-      const sc=Math.min(cw/vw,ch/vh),ox=(cw-vw*sc)/2,oy=(ch-vh*sc)/2,f=vw/2/Math.tan(rad(65)/2),now=Date.now();
+      const sc=Math.min(cw/vw,ch/vh),ox=(cw-vw*sc)/2,oy=(ch-vh*sc)/2,f=Math.max(vw,vh)/2/Math.tan(rad(35))*ST.fk,now=Date.now();
+      lastDims=[vw,vh];
       const box=(x,y,w,h,lab,cl)=>{g.lineWidth=4;g.strokeStyle=cl;g.strokeRect(x*sc+ox,y*sc+oy,w*sc,h*sc);g.font='bold 18px sans-serif';g.fillStyle=cl;g.fillText(lab,x*sc+ox+2,Math.max(18,y*sc+oy-6))};
       fr++;if(now-t0>=1000){fps=fr;fr=0;t0=now}
 
-      /* 1) Obyektlər (COCO-SSD) + izləmə */
-      if(n%2===0||!sm){const dets=await cmodel.detect(v,20);updateTracks(dets.filter(d=>d.score>=(CL[d.class]?0.45:0.55)),now)}
+      /* 1) Obyektlər: hər kadrda */
+      const dets=await detectObjects(v);
+      updateTracks(dets.filter(d=>d.score>=(CL[d.class]?(yo?0.35:0.45):(yo?0.45:0.55))),now);
       n++;
-      let near=null,sigTxt='';const scene=[];
-      const conf=tracks.filter(t=>t.miss<=2&&(t.hits>=2||t.sc>.8));
+      let near=null,sigTxt='',pers=null;const scene=[];
+      const conf=tracks.filter(t=>t.miss<=1&&(t.hits>=2||t.sc>=.65));
       for(const t of conf){
         const road=!!CL[t.c];
         if(!road&&!allOn&&!ANIM.has(t.c))continue;
         let lab=nameOf(t.c),col='';
         if(t.c==='traffic light'){t.ch.push(lightColor(v,t.x,t.y,t.w,t.h));t.ch=t.ch.slice(-6);col=maj(t.ch);if(col)lab+=' '+col}
-        box(t.x,t.y,t.w,t.h,lab,road?(CL[t.c][1]?'#19ff6b':'#ffb020'):ANIM.has(t.c)?'#ff5a5a':'#7ec8ff');
         const cx=t.x+t.w/2,side=cx<vw*.33?'solda':cx>vw*.67?'sağda':'qabaqda';
-        scene.push({c:t.c,nm:lab,side});
-        if(RW[t.c]&&cx>vw*.3&&cx<vw*.7&&(!near||t.w>near.w))near=t;
+        const dd=(RW[t.c]||t.c==='person')?distOf(t,f,vw,vh):null;
+        if(dd&&dd.d)lab+=' '+(dd.close?'<':'~')+Math.round(dd.d)+' m';
+        box(t.x,t.y,t.w,t.h,lab,road?(CL[t.c][1]?'#19ff6b':'#ffb020'):ANIM.has(t.c)?'#ff5a5a':'#7ec8ff');
+        scene.push({c:t.c,nm:nameOf(t.c)+(col?' '+col:''),base:nameOf(t.c),side});
+        if(RW[t.c]&&cx>vw*.3&&cx<vw*.7&&(!near||t.w*t.h>near.w*near.h))near=t;
+        if(t.c==='person'&&cx>vw*.25&&cx<vw*.75&&dd&&dd.d&&(!pers||dd.d<pers))pers=dd.d;
         if(t.c==='stop sign')sayOnce('stop',SI.prio_stop.i,10000,true);
         else if(t.c==='traffic light')sayOnce('tl','Svetofor görünür'+(col?', '+col:'')+'.',8000,col==='qırmızı');
         else if(t.c==='person'&&cx>vw*.25&&cx<vw*.75)sayOnce('pp','Piyada var, diqqətli ol.',10000,true);
-        else if(ANIM.has(t.c)&&side==='qabaqda')sayOnce('an'+t.c,'Yolda '+nameOf(t.c).toLowerCase()+' ola bilər, yavaşla.',9000,true);
+        else if(ANIM.has(t.c)&&side==='qabaqda')sayOnce('an'+t.c,'Yolda '+lc(nameOf(t.c))+' ola bilər, yavaşla.',9000,true);
         if(RW[t.c]&&t.w>vw*.1&&side!=='qabaqda'&&(recent('prio_give_way')||recent('prio_stop')))sayOnce('gw'+side,'Yol ver nişanı var. '+side[0].toUpperCase()+side.slice(1)+' maşın görünür, ona yol ver.',6000,true);
       }
-      if(allOn&&scene.length){      /* hər şeyin adını çək: "qabaqda maşın, sağda adam" */
+      if(allOn&&scene.length){
         const g2={};
-        scene.forEach(o=>{const k=o.side+'|'+o.c;(g2[k]=g2[k]||{k,side:o.side,nm:o.nm,n:0}).n++});
+        scene.forEach(o=>{const k=o.side+'|'+o.c;(g2[k]=g2[k]||{k,side:o.side,nm:o.nm,base:o.base,n:0}).n++});
         const fresh=Object.values(g2).filter(o=>now-(named[o.k]||0)>12000);
         const ord={qabaqda:0,solda:1,'sağda':2};fresh.sort((a,b)=>ord[a.side]-ord[b.side]);
         if(fresh.length&&now-lastScene>3000){
           const part=fresh.slice(0,3);
-          if(say(part.map(o=>o.side+' '+(o.n>1?o.n+' ':'')+o.nm.toLowerCase()).join(', ')+'.',true)){part.forEach(o=>named[o.k]=now);lastScene=now}
+          const txt=part.map(o=>o.side+' '+(o.n>1?o.n+' ':'')+lc(o.nm)).join(', ')+'.';
+          const keys=[];part.forEach(o=>{keys.push(o.side);if(o.n>1)keys.push(String(o.n));keys.push(lc(o.nm))});
+          if(say(txt,true,keys)){part.forEach(o=>named[o.k]=now);lastScene=now}
         }
       }
 
-      /* 2) Yol nişanları (YOLO): hər kadrda fərqli kəsik (bütün/sol/sağ), 2 dəfə görünsə təsdiq */
-      if(sm){
+      /* 2) Yol nişanları: hər 2-ci kadrda, kəsik növbəsi: bütün / sol / sağ */
+      if(sm&&n%2===0){
         const ss=await detectSigns(v,tileN++%3),got=new Set();
         for(const o of ss){
           if(got.has(o.cl))continue;got.add(o.cl);
           const h=sgSeen[o.cl]||(sgSeen[o.cl]={n:0,last:0,sc:0});
-          if(now-h.last>2500)h.n=0;
+          if(now-h.last>4000)h.n=0;
           h.n++;h.last=now;h.sc=Math.max(o.sc,h.sc*.85);h.box=o;
         }
+      }
+      if(sm){
         let top=null;const names=[];
         for(const k in sgSeen){
-          const h=sgSeen[k];if(now-h.last>1500||!(h.n>=2||h.sc>=.7))continue;
+          const h=sgSeen[k];if(now-h.last>2500||!(h.n>=2||h.sc>=.7))continue;
           const o=h.box,code=SC[k];
           box(o.x,o.y,o.w,o.h,signName(+k)+' '+Math.round(h.sc*100)+'%','#19ff6b');names.push(signName(+k));
           seenAt[code]=h.last;
@@ -783,39 +934,73 @@ async function camLoop(){
         if(top)bn={a:top.a,until:now+5000};
         sigTxt=names.slice(0,2).join(', ');
       }
+
+      /* 3) Yerdəki xətlər: hər 3-cü kadrda */
+      let laneTxt='';
+      if(ST.lane){
+        if(n%3===0){
+          lcv=lcv||document.createElement('canvas');const LW=160,LH=Math.round(LW*vh/vw);lcv.width=LW;lcv.height=LH;
+          const lg=lcv.getContext('2d',{willReadFrequently:true});lg.drawImage(v,0,0,LW,LH);
+          lane=analyzeLanes(lg.getImageData(0,0,LW,LH).data,LW,LH);lane.W=LW;lane.H=LH;lane.at=now;
+        }
+        if(lane.at&&now-lane.at<1200){
+          drawLanes(g,vw,vh,sc,ox,oy);
+          const nm=l=>l?(l.solid?'fasiləsiz':'qırıq'):'—';
+          laneTxt=' • Xətt: sol '+nm(lane.left)+', sağ '+nm(lane.right);
+          if(lane.off!=null&&curSpd>=20){
+            const dev=lane.off-ST.lane0;
+            if(Math.abs(dev)>.3){if(!driftSince)driftSince=now;if(now-driftSince>800)sayOnce('drift'+(dev>0?'r':'l'),dev>0?'Sağ xəttə yaxınlaşırsan.':'Sol xəttə yaxınlaşırsan.',5000,true)}
+            else driftSince=0;
+          }
+          if(lane.zebra){sayOnce('zb','Qabaqda yerdə piyada keçidi var, yavaşla.',12000,true);bn={a:{lv:'warn',t:'PİYADA KEÇİDİ',i:'Yerdə piyada keçidi xətləri görünür. Yavaşla.'},until:now+3000}}
+        }
+      }
       showBn();
 
-      /* 3) Qabaqdakı maşın: məsafə, yaxınlaşma sürəti, toqquşmaya qalan vaxt */
-      let msg='Qabaqda maşın görünmür',bad=false;
+      /* 4) Qabaqdakı maşın: məsafə, yaxınlaşma sürəti, toqquşmaya qalan vaxt */
+      let msg='Qabaqda maşın görünmür',bad=false;lastNear=near;
       if(near){
-        const d=RW[near.c]*f/near.w;near.dh.push({t:now,d});near.dh=near.dh.filter(e=>now-e.t<2500);
-        let vc=0;const a0=near.dh[0],b0=near.dh[near.dh.length-1],dt=(b0.t-a0.t)/1000;if(dt>=1)vc=(a0.d-b0.d)/dt;   /* m/s, müsbət = yaxınlaşır */
+        const dd=distOf(near,f,vw,vh),d=dd.d;lastD=d;
+        near.dh.push({t:now,d});near.dh=near.dh.filter(e=>now-e.t<2500);
+        let vc=0;const a0=near.dh[0],b0=near.dh[near.dh.length-1],dt=(b0.t-a0.t)/1000;if(dt>=1)vc=(a0.d-b0.d)/dt;
         const sp=curSpd/3.6,ttc=vc>2.5?d/vc:99;
-        msg='Qabaqdakı '+nameOf(near.c).toLowerCase()+': təxminən '+Math.round(d)+' m'+(vc>1.5?' • yaxınlaşır':vc<-1.5?' • uzaqlaşır':'');
+        msg='Qabaqdakı '+lc(nameOf(near.c))+': '+(dd.close?'1-4 m (çox yaxın)':'təxminən '+Math.round(d)+' m')+(vc>1.5?' • yaxınlaşır':vc<-1.5?' • uzaqlaşır':'');
         if(ttc<2.5&&d<35){bad=true;sayOnce('ttc','Qabaqdakı maşına sürətlə yaxınlaşırsan, əyləc!',4000,true)}
         else if(curSpd>15&&d/sp<1.5){bad=true;sayOnce('gap','Məsafəni saxla! Qabaqdakı maşına çox yaxınsan.',5000,true)}
         else if(d<5){bad=true;sayOnce('gap','Qabaqdakı maşına çox yaxınsan!',5000,true)}
-      }
-      $('cd').textContent='fps '+fps+' • obyekt: '+cocoSrc+' • nişan: '+(sm?signSrc+' '+sgDbg.fmt+(sgDbg.best?' '+SC[sgDbg.best.cl]+' '+Math.round(sgDbg.best.sc*100)+'%':''):'YOXDUR '+signErr)+' • '+sgDbg.shapes;
-      $('ci').textContent=msg+(sigTxt?' • Nişan: '+sigTxt:'')+' • '+Math.round(curSpd)+' km/saat'+(lim?' • limit '+lim:'');
+      }else if(pers!=null)msg='Qabaqda piyada: təxminən '+Math.round(pers)+' m';
+      const objSrc=yo?'YOLOv8n '+yoSrc:'COCO-SSD '+cocoSrc;
+      $('cd').textContent='fps '+fps+' • '+(window.tf&&tf.getBackend?tf.getBackend():'?')+' • obyekt: '+objSrc+(yo?'':' ('+(yoErr||'YOLOv8 yoxdur')+')')+' • nişan: '+(sm?signSrc+' '+sgDbg.fmt+(sgDbg.best?' '+SC[sgDbg.best.cl]+' '+Math.round(sgDbg.best.sc*100)+'%':''):'YOXDUR '+signErr);
+      $('ci').textContent=msg+(sigTxt?' • Nişan: '+sigTxt:'')+laneTxt+' • '+Math.round(curSpd)+' km/saat'+(lim?' • limit '+lim:'');
       $('ci').style.background=bad?'rgba(201,32,47,.9)':'rgba(0,0,0,.65)';
     }catch(e){showT('Kamera: '+e.message);break}
-    await new Promise(r=>setTimeout(r,20));
+    await new Promise(r=>setTimeout(r,0));
   }
 }
+$('ck').onclick=()=>{
+  if(!lastNear||!lastD||!lastDims){showT('Qabaqda ölçülə bilən maşın görünmür');return}
+  const D=parseFloat(String(prompt('Qabaqdakı '+nameOf(lastNear.c).toLowerCase()+'a real məsafə (metr):','10')||'').replace(',','.'));
+  if(!(D>0))return;
+  ST.fk=Math.min(3,Math.max(.3,ST.fk*D/lastD));saveST();showT('Məsafə kalibri yadda saxlandı (×'+ST.fk.toFixed(2)+')');
+};
+$('cl').onclick=()=>{if(lane.off==null){showT('Zolaq xətləri görünmür');return}ST.lane0=lane.off;saveST();showT('Zolaq mərkəzi yadda saxlandı')};
 async function loadCoco(){
   const acc=ST.acc==='acc'?'v2':'lite',base=acc==='v2'?'mobilenet_v2':'lite_mobilenet_v2';
   for(const u of ['models/coco/'+acc+'/model.json',null]){
     try{const m=await cocoSsd.load(u?{modelUrl:u}:{base});cocoSrc=u?'APK':'internet';return m}catch(e){}
   }
-  throw new Error('Obyekt modeli yüklənmədi (internet və ya APK faylı yoxdur)');
+  throw new Error('Obyekt modeli yüklənmədi (nə YOLOv8, nə COCO-SSD tapıldı)');
 }
 async function openCam(){
   $('camv').style.display='block';$('ci').textContent='Kamera və modellər yüklənir…';
   try{
     if(!window.tf)await loadAny(['vendor/tf.min.js','https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js']);
-    if(!window.cocoSsd)await loadAny(['vendor/coco-ssd.min.js','https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js']);
-    if(!cmodel||cmodelAcc!==ST.acc){$('ci').textContent='Obyekt modeli yüklənir…';cmodel=await loadCoco();cmodelAcc=ST.acc}
+    try{await tf.setBackend('webgl');await tf.ready()}catch(e){}
+    if(!yo&&!yoTried){yoTried=true;$('ci').textContent='Obyekt modeli (YOLOv8) yüklənir…';await loadYolo()}
+    if(!yo){
+      if(!window.cocoSsd)await loadAny(['vendor/coco-ssd.min.js','https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js']);
+      if(!cmodel||cmodelAcc!==ST.acc){$('ci').textContent='Ehtiyat obyekt modeli yüklənir…';cmodel=await loadCoco();cmodelAcc=ST.acc}
+    }
     if(!sm){$('ci').textContent='Nişan modeli yüklənir…';if(!await loadSigns())showT('Nişan modeli yüklənmədi. '+signErr)}
     cstream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}},audio:false});
     const v=$('cv');v.srcObject=cstream;await v.play();camOn=true;camLoop();
